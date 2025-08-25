@@ -1,16 +1,17 @@
 {
   "expo": {
-    "name": "MobileApp",
-    "slug": "MobileApp",
+    "name": "RestaurantApp",
+    "slug": "restrauntapp",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "mobileapp",
+    "scheme": "restaurantapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "owner": "pushkar9829",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.vikrant_himanshu.RestaurantApp"
     },
     "android": {
       "adaptiveIcon": {
@@ -18,7 +19,7 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.vikrant_himanshu.MobileApp"
+      "package": "com.vikrant_himanshu.RestaurantApp"
     },
     "web": {
       "bundler": "metro",
@@ -44,7 +45,7 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "0e626d1b-e268-4100-99c6-7ba84b65249d"
+        "projectId": "87a1ec48-6492-41c1-a04b-dcd6d17aee21"
       }
     }
   }

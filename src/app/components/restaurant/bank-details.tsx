@@ -1,8 +1,8 @@
 import { CITIES, PIN_CODES, STATES } from "@/constant/restaurant/country";
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
-import React, { useState } from "react";
-import { Alert, ScrollView, TouchableOpacity, View } from "react-native";
+import React, { useState, useEffect } from "react";
+import { Alert, Image, Modal, ScrollView, TouchableOpacity, View } from "react-native";
 import {
   Button,
   Divider,
@@ -46,9 +46,16 @@ interface BankDetailsSectionProps {
     pan: DocumentAsset | null;
     passbook: DocumentAsset | null;
   }) => void;
+  initialData?: BankFormData;
+  existingDocuments?: {
+    qrImage: DocumentAsset | null;
+    aadhaar: DocumentAsset | null;
+    pan: DocumentAsset | null;
+    passbook: DocumentAsset | null;
+  };
 }
 
-const BankDetailsSection: React.FC<BankDetailsSectionProps> = ({ onDataChange, onDocumentsChange }) => {
+const BankDetailsSection: React.FC<BankDetailsSectionProps> = ({ onDataChange, onDocumentsChange, initialData, existingDocuments }) => {
   const [bankFormData, setBankFormData] = useState<BankFormData>({
     bankName: "",
     bankBranch: "",
@@ -65,6 +72,95 @@ const BankDetailsSection: React.FC<BankDetailsSectionProps> = ({ onDataChange, o
     state: "",
   });
 
+  // Handle initial data when component mounts or initialData changes
+  useEffect(() => {
+    if (initialData) {
+      console.log("🏦 [BANK_DETAILS] Setting initial data:", initialData);
+      setBankFormData(initialData);
+      
+      // Set existing documents from initialData if they exist
+      if (initialData.aadhaarCard && initialData.aadhaarCard.startsWith('http')) {
+        setDocuments(prev => ({
+          ...prev,
+          aadhaar: {
+            uri: initialData.aadhaarCard,
+            name: 'Aadhaar Card',
+            type: 'image/jpeg'
+          }
+        }));
+      }
+      
+      if (initialData.panCard && initialData.panCard.startsWith('http')) {
+        setDocuments(prev => ({
+          ...prev,
+          pan: {
+            uri: initialData.panCard,
+            name: 'PAN Card',
+            type: 'image/jpeg'
+          }
+        }));
+      }
+      
+      if (initialData.passBook && initialData.passBook.startsWith('http')) {
+        setDocuments(prev => ({
+          ...prev,
+          passbook: {
+            uri: initialData.passBook,
+            name: 'Passbook',
+            type: 'image/jpeg'
+          }
+        }));
+      }
+      
+      // Handle QR code if it exists in initialData
+      // Note: QR code might be stored in a different field name in the backend
+      // You may need to adjust this based on your actual backend structure
+      
+      console.log("🏦 [BANK_DETAILS] Existing documents loaded from initialData");
+    } else {
+      console.log("🏦 [BANK_DETAILS] No initial data provided, using empty form");
+    }
+  }, [initialData]);
+
+  // Handle existing documents from parent component
+  useEffect(() => {
+    if (existingDocuments) {
+      console.log("🏦 [BANK_DETAILS] Setting existing documents from parent:", existingDocuments);
+      
+      if (existingDocuments.aadhaar) {
+        setDocuments(prev => ({
+          ...prev,
+          aadhaar: existingDocuments.aadhaar
+        }));
+      }
+      
+      if (existingDocuments.pan) {
+        setDocuments(prev => ({
+          ...prev,
+          pan: existingDocuments.pan
+        }));
+      }
+      
+      if (existingDocuments.passbook) {
+        setDocuments(prev => ({
+          ...prev,
+          passbook: existingDocuments.passbook
+        }));
+      }
+      
+      if (existingDocuments.qrImage) {
+        setQrImage(existingDocuments.qrImage);
+      }
+      
+      console.log("🏦 [BANK_DETAILS] Existing documents loaded from parent");
+    }
+  }, [existingDocuments]);
+
+  // Log when component renders
+  useEffect(() => {
+    console.log("🏦 [BANK_DETAILS] Component rendered with bankFormData:", bankFormData);
+  }, [bankFormData]);
+
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const [documents, setDocuments] = useState<{
     aadhaar: DocumentAsset | null;
@@ -77,6 +173,8 @@ const BankDetailsSection: React.FC<BankDetailsSectionProps> = ({ onDataChange, o
   });
 
   const [qrImage, setQrImage] = useState<DocumentAsset | null>(null);
+  const [selectedImage, setSelectedImage] = useState<DocumentAsset | null>(null);
+  const [imageModalVisible, setImageModalVisible] = useState(false);
 
   // Dropdown menu states
   const [cityMenuVisible, setCityMenuVisible] = useState<boolean>(false);
@@ -97,6 +195,7 @@ const BankDetailsSection: React.FC<BankDetailsSectionProps> = ({ onDataChange, o
     field: keyof BankFormData,
     value: string
   ): void => {
+    console.log("🏦 [BANK_DETAILS] Input changed:", { field, value, currentData: bankFormData });
     const updatedData = {
       ...bankFormData,
       [field]: value,
@@ -121,6 +220,18 @@ const BankDetailsSection: React.FC<BankDetailsSectionProps> = ({ onDataChange, o
     return focusedField === fieldName
       ? styles.focusedOutline
       : styles.inputOutline;
+  };
+
+  const openImageModal = (image: DocumentAsset) => {
+    console.log("🏦 [BANK_DETAILS] Opening image modal for:", image);
+    setSelectedImage(image);
+    setImageModalVisible(true);
+  };
+
+  const closeImageModal = () => {
+    console.log("🏦 [BANK_DETAILS] Closing image modal");
+    setSelectedImage(null);
+    setImageModalVisible(false);
   };
 
   const handleMenuItemPress = (
@@ -165,7 +276,9 @@ const BankDetailsSection: React.FC<BankDetailsSectionProps> = ({ onDataChange, o
           name: `qr_code_${Date.now()}.jpg`,
           type: 'image/jpeg',
         };
+        // Replace old QR image with new one
         setQrImage(qrAsset);
+        console.log('🔄 [BANK_DETAILS] Replaced QR image from camera:', qrAsset.name);
         notifyDocumentsChange(); // Notify parent of QR image change
       }
     } catch (error) {
@@ -195,7 +308,9 @@ const BankDetailsSection: React.FC<BankDetailsSectionProps> = ({ onDataChange, o
           name: result.assets[0].fileName || `qr_code_${Date.now()}.jpg`,
           type: 'image/jpeg',
         };
+        // Replace old QR image with new one
         setQrImage(qrAsset);
+        console.log('🔄 [BANK_DETAILS] Replaced QR image from gallery:', qrAsset.name);
         notifyDocumentsChange(); // Notify parent of QR image change
       }
     } catch (error) {
@@ -219,6 +334,7 @@ const BankDetailsSection: React.FC<BankDetailsSectionProps> = ({ onDataChange, o
           size: result.assets[0].size,
         };
 
+        // Replace old document with new one
         setDocuments(prev => ({
           ...prev,
           [type]: document,
@@ -231,12 +347,37 @@ const BankDetailsSection: React.FC<BankDetailsSectionProps> = ({ onDataChange, o
           passbook: 'passBook',
         };
         handleBankInputChange(fieldMap[type] as keyof BankFormData, document.name);
+        
+        console.log(`🔄 [BANK_DETAILS] Replaced ${type} document:`, document.name);
         notifyDocumentsChange(); // Notify parent of document change
       }
     } catch (error) {
       console.log('Document picker error:', error);
       Alert.alert('Error', 'Failed to pick document');
     }
+  };
+
+  const removeDocument = (type: 'aadhaar' | 'pan' | 'passbook'): void => {
+    setDocuments(prev => ({
+      ...prev,
+      [type]: null,
+    }));
+
+    // Clear form data for the removed document
+    const fieldMap = {
+      aadhaar: 'aadhaarCard',
+      pan: 'panCard',
+      passbook: 'passBook',
+    };
+    handleBankInputChange(fieldMap[type] as keyof BankFormData, '');
+    
+    console.log(`🗑️ [BANK_DETAILS] Removed ${type} document`);
+    notifyDocumentsChange();
+  };
+
+  // Check if there are any existing images to display
+  const hasExistingImages = () => {
+    return qrImage || documents.aadhaar || documents.pan || documents.passbook;
   };
 
   return (
@@ -544,6 +685,109 @@ const BankDetailsSection: React.FC<BankDetailsSectionProps> = ({ onDataChange, o
             </Menu>
           </View>
         </View>
+
+        {/* Image Display Section */}
+        {hasExistingImages() && (
+          <View style={styles.fullWidth}>
+            <Text style={styles.label}>Uploaded Documents</Text>
+            <View style={styles.imageRow}>
+              {qrImage && (
+                <View style={styles.imageContainer}>
+                  <TouchableOpacity onPress={() => openImageModal(qrImage)}>
+                    <Image source={{ uri: qrImage.uri }} style={styles.thumbnail} />
+                  </TouchableOpacity>
+                  <Text style={styles.imageIndex}>QR Code</Text>
+                  <TouchableOpacity 
+                    style={styles.removeButton}
+                    onPress={() => {
+                      Alert.alert(
+                        'Remove QR Code',
+                        'Are you sure you want to remove this QR code?',
+                        [
+                          { text: 'Cancel', style: 'cancel' },
+                          { text: 'Remove', style: 'destructive', onPress: () => setQrImage(null) }
+                        ]
+                      );
+                    }}
+                  >
+                    <Text style={styles.removeButtonText}>Remove</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+              {documents.aadhaar && (
+                <View style={styles.imageContainer}>
+                  <TouchableOpacity onPress={() => documents.aadhaar && openImageModal(documents.aadhaar)}>
+                    <Image source={{ uri: documents.aadhaar.uri }} style={styles.thumbnail} />
+                  </TouchableOpacity>
+                  <Text style={styles.imageIndex}>Aadhaar</Text>
+                  <TouchableOpacity 
+                    style={styles.removeButton}
+                    onPress={() => removeDocument('aadhaar')}
+                  >
+                    <Text style={styles.removeButtonText}>Remove</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+              {documents.pan && (
+                <View style={styles.imageContainer}>
+                  <TouchableOpacity onPress={() => documents.pan && openImageModal(documents.pan)}>
+                    <Image source={{ uri: documents.pan.uri }} style={styles.thumbnail} />
+                  </TouchableOpacity>
+                  <Text style={styles.imageIndex}>PAN Card</Text>
+                  <TouchableOpacity 
+                    style={styles.removeButton}
+                    onPress={() => removeDocument('pan')}
+                  >
+                    <Text style={styles.removeButtonText}>Remove</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+              {documents.passbook && (
+                <View style={styles.imageContainer}>
+                  <TouchableOpacity onPress={() => documents.passbook && openImageModal(documents.passbook)}>
+                    <Image source={{ uri: documents.passbook.uri }} style={styles.thumbnail} />
+                  </TouchableOpacity>
+                  <Text style={styles.imageIndex}>Passbook</Text>
+                  <TouchableOpacity 
+                    style={styles.removeButton}
+                    onPress={() => removeDocument('passbook')}
+                  >
+                    <Text style={styles.removeButtonText}>Remove</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
+            
+
+          </View>
+        )}
+
+        {/* Image Modal */}
+        <Modal
+          visible={imageModalVisible}
+          transparent={true}
+          animationType="fade"
+          onRequestClose={closeImageModal}
+        >
+          <View style={styles.imageModalOverlay}>
+            <View style={styles.imageModalContainer}>
+              {selectedImage && (
+                <Image
+                  source={{ uri: selectedImage.uri }}
+                  style={styles.fullImage}
+                  resizeMode="contain"
+                />
+              )}
+              <IconButton
+                icon="close"
+                size={30}
+                style={styles.closeImageModalButton}
+                iconColor="#fff"
+                onPress={closeImageModal}
+              />
+            </View>
+          </View>
+        </Modal>
       </View>
     </Surface>
   );

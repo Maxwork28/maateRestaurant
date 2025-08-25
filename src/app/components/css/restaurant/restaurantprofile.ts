@@ -207,4 +207,91 @@ iosDatePicker: {
   backgroundColor: '#fff',
   height: 200,
 },
+// Image display styles
+imageSection: {
+  marginTop: 16,
+  marginBottom: 8,
+},
+imageLabel: {
+  fontSize: 14,
+  color: '#333',
+  marginBottom: 8,
+  fontWeight: '500',
+},
+imageRow: {
+  flexDirection: 'row',
+  flexWrap: 'wrap',
+  gap: 12,
+  marginTop: 8,
+},
+imageContainer: {
+  alignItems: 'center',
+  marginBottom: 8,
+},
+thumbnail: {
+  width: 80,
+  height: 80,
+  borderRadius: 8,
+  borderWidth: 1,
+  borderColor: '#e0e0e0',
+},
+imageIndex: {
+  fontSize: 12,
+  color: '#666',
+  marginTop: 4,
+  textAlign: 'center',
+},
+// Image modal styles
+imageModalOverlay: {
+  flex: 1,
+  justifyContent: 'center',
+  alignItems: 'center',
+  backgroundColor: 'rgba(0, 0, 0, 0.8)',
+},
+imageModalContainer: {
+  backgroundColor: '#fff',
+  borderRadius: 12,
+  padding: 20,
+  margin: 20,
+  maxWidth: '90%',
+  maxHeight: '80%',
+},
+fullImage: {
+  width: 300,
+  height: 300,
+  borderRadius: 8,
+},
+closeImageModalButton: {
+  position: 'absolute',
+  top: -10,
+  right: -10,
+  backgroundColor: '#ff5722',
+},
+// Remove button styles
+removeButton: {
+  backgroundColor: '#ff4444',
+  paddingHorizontal: 8,
+  paddingVertical: 4,
+  borderRadius: 4,
+  marginTop: 4,
+},
+removeButtonText: {
+  color: '#fff',
+  fontSize: 12,
+  fontWeight: '500',
+},
+// Debug info styles
+debugInfo: {
+  marginTop: 16,
+  padding: 12,
+  backgroundColor: '#f5f5f5',
+  borderRadius: 8,
+  borderWidth: 1,
+  borderColor: '#e0e0e0',
+},
+debugText: {
+  fontSize: 12,
+  color: '#666',
+  marginBottom: 4,
+},
 });

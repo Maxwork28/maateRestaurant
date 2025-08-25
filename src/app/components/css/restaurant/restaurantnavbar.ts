@@ -44,6 +44,16 @@ export const styles = StyleSheet.create({
     borderRadius: 17,
     marginRight: 10,
   },
+  avatarFallback: {
+    backgroundColor: "#FA4A0C",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  avatarText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "bold",
+  },
   drawerContainer: {
     backgroundColor: "#fff",
     width: "100%",

@@ -1,6 +1,6 @@
 import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Image,
   LayoutAnimation,
@@ -10,9 +10,13 @@ import {
   TouchableOpacity,
   UIManager,
   View,
+  Alert,
 } from "react-native";
 import { Text } from "react-native-paper";
 import { styles } from "../css/restaurant/restaurantnavbar";
+import { useAppSelector, useAppDispatch } from "../../../store/hooks";
+import { apiConnector } from "../../../services/apiConnector";
+import { updateUserProfile } from "../../../store/slices/authSlice";
 
 if (Platform.OS === "android") {
   UIManager.setLayoutAnimationEnabledExperimental &&
@@ -39,16 +43,57 @@ const Navbar = ({ children }: Props) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const router = useRouter();
   const [activeMenu, setActiveMenu] = useState("Dashboard");
-  const [isOnline, setIsOnline] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  
+  // Get user data and dispatch from Redux store
+  const { user, token } = useAppSelector((state) => state.auth);
+  const dispatch = useAppDispatch();
+  
+  // Use user's online status from Redux state
+  const isOnline = user?.isOnline || false;
 
   const handleMenuToggle = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setIsMenuOpen(!isMenuOpen);
   };
 
-  const handleGoOnline = () => {
-    setIsOnline((prev) => !prev);
-    console.log(isOnline ? "Went Offline" : "Went Online");
+  const handleGoOnline = async () => {
+    if (isLoading) return; // Prevent multiple calls
+    
+    try {
+      setIsLoading(true);
+      console.log("🔄 [NAVBAR] Toggling online status...");
+      
+      // Call the API to toggle online status
+      const response = await apiConnector.toggleOnlineStatus(token);
+      
+      if (response.success && response.data) {
+        console.log("✅ [NAVBAR] Online status toggled successfully:", response.data);
+        
+        // Update Redux state with new online status
+        if (user) {
+          dispatch(updateUserProfile({
+            ...user,
+            isOnline: response.data.isOnline
+          }));
+        }
+        
+        // Show success message
+        Alert.alert(
+          "Status Updated",
+          response.data.message || `Restaurant is now ${response.data.isOnline ? 'online' : 'offline'}`,
+          [{ text: "OK" }]
+        );
+      } else {
+        console.error("❌ [NAVBAR] Failed to toggle online status:", response.message);
+        Alert.alert("Error", response.message || "Failed to update status");
+      }
+    } catch (error: any) {
+      console.error("❌ [NAVBAR] Error toggling online status:", error);
+      Alert.alert("Error", error.message || "Failed to update status");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleProfile = () => {
@@ -68,12 +113,14 @@ const Navbar = ({ children }: Props) => {
         <Text style={styles.logoText}>MANGIEE</Text>
         <TouchableOpacity
           onPress={handleGoOnline}
+          disabled={isLoading}
           style={[
             styles.goOnlineBtn,
             {
               backgroundColor: isOnline ? "#1AB760" : "#FA4A0C",
               borderWidth: isOnline ? 0 : 1,
               borderColor: isOnline ? "transparent" : "#FA4A0C",
+              opacity: isLoading ? 0.6 : 1,
             },
           ]}
         >
@@ -86,7 +133,7 @@ const Navbar = ({ children }: Props) => {
               },
             ]}
           >
-            {isOnline ? "GO OFFLINE" : "GO ONLINE"}
+            {isLoading ? "UPDATING..." : (isOnline ? "GO OFFLINE" : "GO ONLINE")}
           </Text>
         </TouchableOpacity>
 
@@ -96,12 +143,20 @@ const Navbar = ({ children }: Props) => {
           </TouchableOpacity>
 
           <TouchableOpacity onPress={handleProfile}>
-            <Image
-              source={{
-                uri: "https://randomuser.me/api/portraits/men/75.jpg",
-              }}
-              style={styles.avatar}
-            />
+            {user?.documents?.profileImage ? (
+              <Image
+                source={{ uri: user.documents.profileImage }}
+                style={styles.avatar}
+                defaultSource={{ uri: "https://randomuser.me/api/portraits/men/75.jpg" }}
+                onError={() => console.log("Failed to load profile image")}
+              />
+            ) : (
+              <View style={[styles.avatar, styles.avatarFallback]}>
+                <Text style={styles.avatarText}>
+                  {user?.firstName?.charAt(0) || "R"}{user?.lastName?.charAt(0) || "P"}
+                </Text>
+              </View>
+            )}
           </TouchableOpacity>
 
           <TouchableOpacity onPress={handleMenuToggle}>

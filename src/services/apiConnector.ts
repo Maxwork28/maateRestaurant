@@ -1,4 +1,4 @@
-import { API_URLS, HTTP_STATUS, ApiResponse, RestaurantProfile, LoginResponse, DashboardData } from './apiConfig';
+import { API_URLS, HTTP_STATUS, ApiResponse, RestaurantProfile, LoginResponse, DashboardData, Order, OrderStats, PaginationInfo, OrderStatus, Review, ReviewStats, ReviewPaginationInfo } from './apiConfig';
 
 // Storage keys
 const STORAGE_KEYS = {
@@ -50,7 +50,25 @@ class ApiConnector {
 
       clearTimeout(timeoutId);
 
-      const data: ApiResponse<T> = await response.json();
+      // Debug: Log response details
+      console.log("🔍 [API] Response status:", response.status);
+      console.log("🔍 [API] Response headers:", response.headers);
+      
+      let data: ApiResponse<T>;
+      try {
+        const responseText = await response.text();
+        console.log("🔍 [API] Response text:", responseText.substring(0, 200) + "...");
+        
+        if (responseText.trim() === '') {
+          throw new Error('Empty response from server');
+        }
+        
+        data = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error("❌ [API] JSON Parse Error:", parseError);
+        console.error("❌ [API] Response was not valid JSON");
+        throw new Error(`Server returned invalid response: ${parseError.message}`);
+      }
 
       if (!response.ok) {
         // Handle specific error cases
@@ -97,6 +115,14 @@ class ApiConnector {
     });
   }
 
+  // PATCH request method
+  private async patch<T>(url: string, body: any, token: string | null): Promise<ApiResponse<T>> {
+    return this.makeRequest<T>(url, token, {
+      method: 'PATCH',
+      body: JSON.stringify(body),
+    });
+  }
+
   // DELETE request method
   private async delete<T>(url: string, token: string | null): Promise<ApiResponse<T>> {
     return this.makeRequest<T>(url, token, {
@@ -116,8 +142,27 @@ class ApiConnector {
         headers: this.getHeaders(token, 'multipart/form-data'),
       });
 
-      const data: ApiResponse<T> = await response.json();
-      console.log("📥 [API] Response received:", data);
+      console.log("🔍 [API] Response status:", response.status);
+      console.log("🔍 [API] Response headers:", response.headers);
+      
+      let data: ApiResponse<T>;
+      let responseText: string;
+      try {
+        responseText = await response.text();
+        console.log("🔍 [API] Response text:", responseText.substring(0, 200) + "...");
+        
+        if (responseText.trim() === '') {
+          throw new Error('Empty response from server');
+        }
+        
+        data = JSON.parse(responseText);
+        console.log("📥 [API] Response parsed successfully:", data);
+      } catch (parseError: any) {
+        console.error("❌ [API] JSON Parse Error in postFormData:", parseError);
+        console.error("❌ [API] Response was not valid JSON");
+        console.error("❌ [API] Full response text:", responseText);
+        throw new Error(`Server returned invalid response: ${parseError.message}`);
+      }
 
       if (!response.ok) {
         // Handle specific error cases
@@ -139,13 +184,13 @@ class ApiConnector {
 
   // Send OTP
   async sendOTP(phone: string, token: string | null): Promise<ApiResponse<{ phone: string; message: string }>> {
-    const response = await this.post(API_URLS.SEND_OTP, { phone }, token);
+    const response = await this.post<{ phone: string; message: string }>(API_URLS.SEND_OTP, { phone }, token);
     return response;
   }
 
   // Verify OTP and login
   async verifyOTP(phone: string, otp: string, token: string | null): Promise<ApiResponse<LoginResponse>> {
-    const response = await this.post(API_URLS.VERIFY_OTP, { phone, otp }, token);
+    const response = await this.post<LoginResponse>(API_URLS.VERIFY_OTP, { phone, otp }, token);
     
     if (response.success && response.data?.token) {
       // The original code saved the token here, but the new makeRequest doesn't have a saveToken method.
@@ -158,19 +203,19 @@ class ApiConnector {
 
   // Register new restaurant
   async registerRestaurant(restaurantData: Partial<RestaurantProfile>, token: string | null): Promise<ApiResponse<{ restaurant: RestaurantProfile; message: string }>> {
-    const response = await this.post(API_URLS.REGISTER, restaurantData, token);
+    const response = await this.post<{ restaurant: RestaurantProfile; message: string }>(API_URLS.REGISTER, restaurantData, token);
     return response;
   }
 
   // Get restaurant profile
   async getProfile(token: string | null): Promise<ApiResponse<RestaurantProfile>> {
-    const response = await this.get(API_URLS.PROFILE, token);
+    const response = await this.get<RestaurantProfile>(API_URLS.PROFILE, token);
     return response;
   }
 
   // Update restaurant profile
   async updateProfile(profileData: Partial<RestaurantProfile>, token: string | null): Promise<ApiResponse<RestaurantProfile>> {
-    const response = await this.post(API_URLS.PROFILE, profileData, token);
+    const response = await this.post<RestaurantProfile>(API_URLS.PROFILE, profileData, token);
     return response;
   }
 
@@ -261,7 +306,7 @@ class ApiConnector {
       }
 
       console.log("📤 [API] Sending FormData to:", API_URLS.PROFILE);
-      const response = await this.postFormData(API_URLS.PROFILE, formData, token);
+      const response = await this.postFormData<RestaurantProfile>(API_URLS.PROFILE, formData, token);
       console.log("✅ [API] Profile update response:", response);
       return response;
     } catch (error) {
@@ -296,22 +341,407 @@ class ApiConnector {
 
   // Get dashboard data
   async getDashboard(token: string | null): Promise<ApiResponse<DashboardData>> {
-    const response = await this.get(API_URLS.DASHBOARD, token);
+    const response = await this.get<DashboardData>(API_URLS.DASHBOARD, token);
     return response;
   }
 
   // Remove specific mess image
   async removeMessImage(imageUrl: string, token: string | null): Promise<ApiResponse<{ messImages: string[] }>> {
     const url = `${API_URLS.MESS_IMAGE}/${encodeURIComponent(imageUrl)}`;
-    const response = await this.delete(url, token);
+    const response = await this.delete<{ messImages: string[] }>(url, token);
     return response;
   }
 
   // Clear all mess images
   async clearMessImages(token: string | null): Promise<ApiResponse<{ messImages: string[] }>> {
-    const response = await this.delete(API_URLS.MESS_IMAGES, token);
+    const response = await this.delete<{ messImages: string[] }>(API_URLS.MESS_IMAGES, token);
     return response;
   }
+
+  // Toggle restaurant online/offline status
+  async toggleOnlineStatus(token: string | null): Promise<ApiResponse<{ isOnline: boolean; message: string }>> {
+    try {
+      console.log("🔄 [API] Toggling restaurant online status...");
+      const response = await this.post<{ isOnline: boolean; message: string }>(API_URLS.TOGGLE_ONLINE, {}, token);
+      console.log("✅ [API] Online status toggled successfully:", response.data);
+      return response;
+    } catch (error) {
+      console.error("❌ [API] Error toggling online status:", error);
+      throw error;
+    }
+  }
+
+  // ===== ORDER METHODS =====
+
+  // Get restaurant orders
+  async getRestaurantOrders(token: string | null, status?: OrderStatus, page: number = 1, limit: number = 10): Promise<ApiResponse<{ orders: Order[]; pagination: PaginationInfo }>> {
+    try {
+      console.log("📦 [API] Fetching restaurant orders...");
+      
+      // Validate token
+      if (!token) {
+        throw new Error('Authentication token is required to fetch restaurant orders');
+      }
+      
+      // Validate parameters
+      if (page < 1) {
+        console.warn("⚠️ [API] Page number cannot be less than 1, setting to 1");
+        page = 1;
+      }
+      if (limit < 1 || limit > 100) {
+        console.warn("⚠️ [API] Limit must be between 1 and 100, setting to 10");
+        limit = 10;
+      }
+      
+      const params = new URLSearchParams();
+      if (status && status.trim() !== '') {
+        params.append('status', status);
+        console.log("📦 [API] Applied status filter:", status);
+      }
+      params.append('page', page.toString());
+      params.append('limit', limit.toString());
+      
+      const url = `${API_URLS.GET_RESTAURANT_ORDERS}?${params.toString()}`;
+      console.log("🔗 [API] Orders URL:", url);
+      
+      const response = await this.get<{ orders: Order[]; pagination: PaginationInfo }>(url, token);
+      console.log("✅ [API] Restaurant orders fetched successfully");
+      return response;
+    } catch (error) {
+      console.error("❌ [API] Error fetching restaurant orders:", error);
+      throw error;
+    }
+  }
+
+  // Get order by ID
+  async getOrderById(orderId: string, token: string | null): Promise<ApiResponse<Order>> {
+    try {
+      console.log("📦 [API] Fetching order by ID:", orderId);
+      
+      // Validate order ID
+      if (!orderId || orderId.trim() === '') {
+        throw new Error('Order ID is required');
+      }
+      
+      const url = `${API_URLS.GET_ORDER_BY_ID}/${orderId}`;
+      const response = await this.get<Order>(url, token);
+      console.log("✅ [API] Order fetched successfully");
+      return response;
+    } catch (error) {
+      console.error("❌ [API] Error fetching order:", error);
+      throw error;
+    }
+  }
+
+  // Update order status
+  async updateOrderStatus(orderId: string, status: OrderStatus, token: string | null): Promise<ApiResponse<{ orderId: string; status: string; updatedAt: string }>> {
+    try {
+      console.log("📦 [API] Updating order status:", orderId, status);
+      
+      // Validate order ID
+      if (!orderId || orderId.trim() === '') {
+        throw new Error('Order ID is required');
+      }
+      
+      // Validate status
+      if (!status || status.trim() === '') {
+        throw new Error('Order status is required');
+      }
+      
+      const url = `${API_URLS.UPDATE_ORDER_STATUS}/${orderId}/status`;
+      const response = await this.patch<{ orderId: string; status: string; updatedAt: string }>(url, { status }, token);
+      console.log("✅ [API] Order status updated successfully");
+      return response;
+    } catch (error) {
+      console.error("❌ [API] Error updating order status:", error);
+      throw error;
+    }
+  }
+
+  // Cancel order
+  async cancelOrder(orderId: string, reason: string, token: string | null): Promise<ApiResponse<{ orderId: string; status: string; cancellationReason: string }>> {
+    try {
+      console.log("📦 [API] Cancelling order:", orderId, reason);
+      
+      // Validate order ID
+      if (!orderId || orderId.trim() === '') {
+        throw new Error('Order ID is required');
+      }
+      
+      // Validate reason
+      if (!reason || reason.trim() === '') {
+        throw new Error('Cancellation reason is required');
+      }
+      
+      const url = `${API_URLS.CANCEL_ORDER}/${orderId}/cancel`;
+      const response = await this.patch<{ orderId: string; status: string; cancellationReason: string }>(url, { reason, cancelledBy: 'restaurant' }, token);
+      console.log("✅ [API] Order cancelled successfully");
+      return response;
+    } catch (error) {
+      console.error("❌ [API] Error cancelling order:", error);
+      throw error;
+    }
+  }
+
+  // Get order statistics
+  async getOrderStats(token: string | null): Promise<ApiResponse<OrderStats>> {
+    try {
+      console.log("📦 [API] Fetching order statistics...");
+      
+      // Validate token
+      if (!token) {
+        throw new Error('Authentication token is required to fetch order statistics');
+      }
+      
+      const response = await this.get<OrderStats>(API_URLS.GET_ORDER_STATS, token);
+      console.log("✅ [API] Order statistics fetched successfully");
+      return response;
+    } catch (error) {
+      console.error("❌ [API] Error fetching order statistics:", error);
+      throw error;
+    }
+  }
+
+  // Get orders by specific status (convenience method)
+  async getOrdersByStatus(status: OrderStatus, token: string | null, page: number = 1, limit: number = 10): Promise<ApiResponse<{ orders: Order[]; pagination: PaginationInfo }>> {
+    try {
+      console.log("📦 [API] Fetching orders by status:", status);
+      return await this.getRestaurantOrders(token, status, page, limit);
+    } catch (error) {
+      console.error("❌ [API] Error fetching orders by status:", error);
+      throw error;
+    }
+  }
+
+  // Get pending orders (convenience method)
+  async getPendingOrders(token: string | null, page: number = 1, limit: number = 10): Promise<ApiResponse<{ orders: Order[]; pagination: PaginationInfo }>> {
+    return this.getOrdersByStatus('pending', token, page, limit);
+  }
+
+  // Get confirmed orders (convenience method)
+  async getConfirmedOrders(token: string | null, page: number = 1, limit: number = 10): Promise<ApiResponse<{ orders: Order[]; pagination: PaginationInfo }>> {
+    return this.getOrdersByStatus('confirmed', token, page, limit);
+  }
+
+  // Get preparing orders (convenience method)
+  async getPreparingOrders(token: string | null, page: number = 1, limit: number = 10): Promise<ApiResponse<{ orders: Order[]; pagination: PaginationInfo }>> {
+    return this.getOrdersByStatus('preparing', token, page, limit);
+  }
+
+  // Get ready orders (convenience method)
+  async getReadyOrders(token: string | null, page: number = 1, limit: number = 10): Promise<ApiResponse<{ orders: Order[]; pagination: PaginationInfo }>> {
+    return this.getOrdersByStatus('ready', token, page, limit);
+  }
+
+  // Get delivered orders (convenience method)
+  async getDeliveredOrders(token: string | null, page: number = 1, limit: number = 10): Promise<ApiResponse<{ orders: Order[]; pagination: PaginationInfo }>> {
+    return this.getOrdersByStatus('delivered', token, page, limit);
+  }
+
+  // Get cancelled orders (convenience method)
+  async getCancelledOrders(token: string | null, page: number = 1, limit: number = 10): Promise<ApiResponse<{ orders: Order[]; pagination: PaginationInfo }>> {
+    return this.getOrdersByStatus('cancelled', token, page, limit);
+  }
+
+  // ===== REVIEW METHODS =====
+
+  // Get reviews for current restaurant
+  async getRestaurantReviews(token: string | null, page: number = 1, limit: number = 10, rating?: number, sortBy: string = 'reviewDate', sortOrder: 'asc' | 'desc' = 'desc'): Promise<ApiResponse<{ reviews: Review[]; pagination: ReviewPaginationInfo }>> {
+    try {
+      console.log("⭐ [API] Fetching restaurant reviews...");
+      
+      // Validate token
+      if (!token) {
+        throw new Error('Authentication token is required to fetch restaurant reviews');
+      }
+      
+      // Validate parameters
+      if (page < 1) {
+        console.warn("⚠️ [API] Page number cannot be less than 1, setting to 1");
+        page = 1;
+      }
+      if (limit < 1 || limit > 100) {
+        console.warn("⚠️ [API] Limit must be between 1 and 100, setting to 10");
+        limit = 10;
+      }
+      
+      const params = new URLSearchParams();
+      params.append('page', page.toString());
+      params.append('limit', limit.toString());
+      if (rating) {
+        params.append('rating', rating.toString());
+      }
+      params.append('sortBy', sortBy);
+      params.append('sortOrder', sortOrder);
+      
+      const url = `${API_URLS.GET_RESTAURANT_REVIEWS}?${params.toString()}`;
+      console.log("🔗 [API] Reviews URL:", url);
+      
+      const response = await this.get<{ reviews: Review[]; pagination: ReviewPaginationInfo }>(url, token);
+      console.log("✅ [API] Restaurant reviews fetched successfully");
+      return response;
+    } catch (error) {
+      console.error("❌ [API] Error fetching restaurant reviews:", error);
+      throw error;
+    }
+  }
+
+  // Get reviews by restaurant ID (public access)
+  async getReviewsByRestaurant(restaurantId: string, page: number = 1, limit: number = 10, rating?: number, sortBy: string = 'reviewDate', sortOrder: 'asc' | 'desc' = 'desc'): Promise<ApiResponse<{ reviews: Review[]; pagination: ReviewPaginationInfo }>> {
+    try {
+      console.log("⭐ [API] Fetching reviews by restaurant ID:", restaurantId);
+      
+      // Validate restaurant ID
+      if (!restaurantId || restaurantId.trim() === '') {
+        throw new Error('Restaurant ID is required');
+      }
+      
+      // Validate parameters
+      if (page < 1) {
+        console.warn("⚠️ [API] Page number cannot be less than 1, setting to 1");
+        page = 1;
+      }
+      if (limit < 1 || limit > 100) {
+        console.warn("⚠️ [API] Limit must be between 1 and 100, setting to 10");
+        limit = 10;
+      }
+      
+      const params = new URLSearchParams();
+      params.append('page', page.toString());
+      params.append('limit', limit.toString());
+      if (rating) {
+        params.append('rating', rating.toString());
+      }
+      params.append('sortBy', sortBy);
+      params.append('sortOrder', sortOrder);
+      
+      const url = `${API_URLS.GET_REVIEWS_BY_RESTAURANT}/${restaurantId}?${params.toString()}`;
+      console.log("🔗 [API] Reviews URL:", url);
+      
+      const response = await this.get<{ reviews: Review[]; pagination: ReviewPaginationInfo }>(url, null);
+      console.log("✅ [API] Reviews by restaurant fetched successfully");
+      return response;
+    } catch (error) {
+      console.error("❌ [API] Error fetching reviews by restaurant:", error);
+      throw error;
+    }
+  }
+
+  // Get review by ID
+  async getReviewById(reviewId: string): Promise<ApiResponse<Review>> {
+    try {
+      console.log("⭐ [API] Fetching review by ID:", reviewId);
+      
+      // Validate review ID
+      if (!reviewId || reviewId.trim() === '') {
+        throw new Error('Review ID is required');
+      }
+      
+      const url = `${API_URLS.GET_REVIEW_BY_ID}/${reviewId}`;
+      const response = await this.get<Review>(url, null);
+      console.log("✅ [API] Review fetched successfully");
+      return response;
+    } catch (error) {
+      console.error("❌ [API] Error fetching review:", error);
+      throw error;
+    }
+  }
+
+  // Get review statistics for current restaurant
+  async getReviewStats(token: string | null): Promise<ApiResponse<ReviewStats>> {
+    try {
+      console.log("⭐ [API] Fetching review statistics...");
+      
+      // Validate token
+      if (!token) {
+        throw new Error('Authentication token is required to fetch review statistics');
+      }
+      
+      const response = await this.get<ReviewStats>(API_URLS.GET_REVIEW_STATS, token);
+      console.log("✅ [API] Review statistics fetched successfully");
+      return response;
+    } catch (error) {
+      console.error("❌ [API] Error fetching review statistics:", error);
+      throw error;
+    }
+  }
+
+  // Get review statistics by restaurant ID (public access)
+  async getReviewStatsByRestaurant(restaurantId: string): Promise<ApiResponse<ReviewStats>> {
+    try {
+      console.log("⭐ [API] Fetching review statistics for restaurant:", restaurantId);
+      
+      // Validate restaurant ID
+      if (!restaurantId || restaurantId.trim() === '') {
+        throw new Error('Restaurant ID is required');
+      }
+      
+      const url = `${API_URLS.GET_REVIEW_STATS}/${restaurantId}`;
+      const response = await this.get<ReviewStats>(url, null);
+      console.log("✅ [API] Review statistics by restaurant fetched successfully");
+      return response;
+    } catch (error) {
+      console.error("❌ [API] Error fetching review statistics by restaurant:", error);
+      throw error;
+    }
+  }
+
+  // Mark review as helpful/unhelpful
+  async markReviewHelpful(reviewId: string, isHelpful: boolean, token: string | null): Promise<ApiResponse<{ reviewId: string; helpfulCount: number; unhelpfulCount: number }>> {
+    try {
+      console.log("⭐ [API] Marking review as helpful/unhelpful:", reviewId, isHelpful);
+      
+      // Validate review ID
+      if (!reviewId || reviewId.trim() === '') {
+        throw new Error('Review ID is required');
+      }
+      
+      // Validate token
+      if (!token) {
+        throw new Error('Authentication token is required to mark review as helpful/unhelpful');
+      }
+      
+      const url = `${API_URLS.MARK_REVIEW_HELPFUL}/${reviewId}/helpful`;
+      const response = await this.patch<{ reviewId: string; helpfulCount: number; unhelpfulCount: number }>(url, { isHelpful }, token);
+      console.log("✅ [API] Review marked as helpful/unhelpful successfully");
+      return response;
+    } catch (error) {
+      console.error("❌ [API] Error marking review as helpful/unhelpful:", error);
+      throw error;
+    }
+  }
+
+  // Report review
+  async reportReview(reviewId: string, reason: string, token: string | null): Promise<ApiResponse<{ reviewId: string; reportCount: number }>> {
+    try {
+      console.log("⭐ [API] Reporting review:", reviewId, reason);
+      
+      // Validate review ID
+      if (!reviewId || reviewId.trim() === '') {
+        throw new Error('Review ID is required');
+      }
+      
+      // Validate reason
+      if (!reason || reason.trim() === '') {
+        throw new Error('Report reason is required');
+      }
+      
+      // Validate token
+      if (!token) {
+        throw new Error('Authentication token is required to report review');
+      }
+      
+      const url = `${API_URLS.REPORT_REVIEW}/${reviewId}/report`;
+      const response = await this.patch<{ reviewId: string; reportCount: number }>(url, { reason }, token);
+      console.log("✅ [API] Review reported successfully");
+      return response;
+    } catch (error) {
+      console.error("❌ [API] Error reporting review:", error);
+      throw error;
+    }
+  }
+
+
 
   // ===== CATEGORY METHODS =====
 
@@ -322,7 +752,7 @@ class ApiConnector {
       console.log("🌐 [API] Base URL:", this.baseURL);
       const url = `${this.baseURL}/restaurant/categories`;
       console.log("🔗 [API] Full URL:", url);
-      const response = await this.get(url, token);
+      const response = await this.get<any[]>(url, token);
       console.log("✅ [API] Categories fetched successfully");
       return response;
     } catch (error) {
@@ -338,7 +768,7 @@ class ApiConnector {
       console.log("🌐 [API] Base URL:", this.baseURL);
       const url = `${this.baseURL}/restaurant/categories`;
       console.log("🔗 [API] Full URL:", url);
-      const response = await this.post(url, categoryData, token);
+      const response = await this.post<any>(url, categoryData, token);
       console.log("✅ [API] Category created successfully");
       return response;
     } catch (error) {

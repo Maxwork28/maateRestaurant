@@ -1,10 +1,12 @@
 /* eslint-disable react/display-name */
 import { CITIES, PIN_CODES, STATES } from "@/constant/restaurant/country";
+import { useRouter } from "expo-router";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import * as ImagePicker from "expo-image-picker";
 import React, { useState, useEffect } from "react";
 import {
   Alert,
+  Image,
   Modal,
   Platform,
   ScrollView,
@@ -27,6 +29,7 @@ import BankDetailsSection, { BankFormData } from "./bank-details";
 import { useAppDispatch, useAppSelector } from "../../../store/hooks";
 import { updateUserProfile, setLoading, setError, clearError } from "../../../store/slices/authSlice";
 import { apiConnector } from "../../../utils";
+import { API_URLS } from "../../../services/apiConfig";
 
 // Types
 interface FormData {
@@ -142,6 +145,7 @@ const RestaurantProfile: React.FC = () => {
   
   // ALL HOOKS MUST BE CALLED FIRST - before any conditional logic
   const dispatch = useAppDispatch();
+  const router = useRouter();
   const { user, token, isLoading: authLoading } = useAppSelector((state) => state.auth);
   
   // Initialize all state hooks first
@@ -178,22 +182,41 @@ const RestaurantProfile: React.FC = () => {
     passbook: null,
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<ImageAsset | null>(null);
+  const [imageModalVisible, setImageModalVisible] = useState(false);
   
   // Load existing profile data when component mounts
   useEffect(() => {
     console.log("🔄 [PROFILE_COMPONENT] useEffect triggered with user:", user);
+    console.log("🔍 [PROFILE_COMPONENT] User object details:", {
+      id: user?.id,
+      firstName: user?.firstName,
+      lastName: user?.lastName,
+      businessName: user?.businessName,
+      email: user?.email,
+      phone: user?.phone,
+      address: user?.address,
+      city: user?.city,
+      state: user?.state,
+      pinCode: user?.pinCode,
+      category: user?.category,
+      specialization: user?.specialization,
+      isProfile: user?.isProfile,
+      hasBankDetails: !!user?.bankDetails,
+      hasDocuments: !!user?.documents
+    });
     
     if (user) {
       console.log("📝 [PROFILE_COMPONENT] User data available, isProfile:", user.isProfile);
       
-      // Only populate form if profile is already complete
       if (user.isProfile === true) {
-        console.log("✅ [PROFILE_COMPONENT] Profile is complete, populating form with existing data");
+        // Profile is complete - populate form with all backend data
+        console.log("✅ [PROFILE_COMPONENT] Profile is complete, populating form with all backend data");
         
-        setFormData({
+        const newFormData = {
           firstName: user.firstName || "",
           lastName: user.lastName || "",
-          phoneNumber: user.phone || "",
+          phoneNumber: user.phone || "", // Always keep phone number
           dateOfBirth: user.dateOfBirth ? new Date(user.dateOfBirth) : new Date(),
           businessName: user.businessName || "",
           email: user.email || "",
@@ -203,11 +226,14 @@ const RestaurantProfile: React.FC = () => {
           state: user.state || "",
           category: user.category || "Veg",
           specialization: user.specialization || "",
-        });
+        };
+        
+        console.log("📝 [PROFILE_COMPONENT] Form data populated from backend:", newFormData);
+        setFormData(newFormData);
 
-        // Set bank data if available
+        // Set bank data from backend
         if (user.bankDetails) {
-          console.log("🏦 [PROFILE_COMPONENT] Setting bank data from user profile");
+          console.log("🏦 [PROFILE_COMPONENT] Setting bank data from backend");
           setBankData({
             bankName: user.bankDetails.bankName || "",
             bankBranch: user.bankDetails.bankBranch || "",
@@ -215,7 +241,7 @@ const RestaurantProfile: React.FC = () => {
             accountHolder: user.bankDetails.accountHolder || "",
             ifscCode: user.bankDetails.ifscCode || "",
             customerId: user.bankDetails.customerId || "",
-            phoneNumber: user.bankDetails.bankPhoneNumber || "", // Map to phoneNumber field
+            phoneNumber: user.bankDetails.bankPhoneNumber || user.phone || "", // Use bank phone or fallback to user phone
             passBook: "",
             aadhaarCard: "",
             panCard: "",
@@ -225,9 +251,9 @@ const RestaurantProfile: React.FC = () => {
           });
         }
 
-        // Set existing images if available
+        // Set existing images from backend
         if (user.documents?.profileImage) {
-          console.log("🖼️ [PROFILE_COMPONENT] Setting existing profile image");
+          console.log("🖼️ [PROFILE_COMPONENT] Setting existing profile image from backend");
           setProfileImage({
             uri: user.documents.profileImage,
             type: "image/jpeg",
@@ -236,7 +262,7 @@ const RestaurantProfile: React.FC = () => {
         }
 
         if (user.documents?.messImages && user.documents.messImages.length > 0) {
-          console.log("🖼️ [PROFILE_COMPONENT] Setting existing mess images:", user.documents.messImages.length);
+          console.log("🖼️ [PROFILE_COMPONENT] Setting existing mess images from backend:", user.documents.messImages.length);
           const existingMessImages = user.documents.messImages.map((uri: string, index: number) => ({
             uri,
             type: "image/jpeg",
@@ -244,33 +270,124 @@ const RestaurantProfile: React.FC = () => {
           }));
           setMessImages(existingMessImages);
         }
+
+        // Set existing bank documents from backend
+        if (user.documents?.aadharCard) {
+          console.log("🆔 [PROFILE_COMPONENT] Setting existing Aadhaar card from backend");
+          setBankDocuments(prev => ({
+            ...prev,
+            aadhaar: {
+              uri: user.documents.aadharCard,
+              name: 'Aadhaar Card',
+              type: 'image/jpeg'
+            }
+          }));
+        }
+
+        if (user.documents?.panCard) {
+          console.log("🆔 [PROFILE_COMPONENT] Setting existing PAN card from backend");
+          setBankDocuments(prev => ({
+            ...prev,
+            pan: {
+              uri: user.documents.panCard,
+              name: 'PAN Card',
+              type: 'image/jpeg'
+            }
+          }));
+        }
+
+        if (user.documents?.passbook) {
+          console.log("📄 [PROFILE_COMPONENT] Setting existing passbook from backend");
+          setBankDocuments(prev => ({
+            ...prev,
+            passbook: {
+              uri: user.documents.passbook,
+              name: 'Passbook',
+              type: 'image/jpeg'
+            }
+          }));
+        }
+
+
+        
       } else {
-        console.log("🆕 [PROFILE_COMPONENT] Profile is NOT complete (isProfile: false), keeping form empty for new profile setup");
-        // Keep form empty for new profile setup
-        setFormData({
-          firstName: "",
-          lastName: "",
-          phoneNumber: user.phone || "", // Only populate phone from auth
-          dateOfBirth: new Date(),
-          businessName: "",
-          email: "",
-          address: "",
+        // Profile is NOT complete - show empty form with only phone number
+        console.log("🆕 [PROFILE_COMPONENT] Profile is NOT complete, showing empty form with only phone number");
+        
+        const emptyFormData = {
+          firstName: "", // Empty - no placeholder
+          lastName: "", // Empty - no placeholder
+          phoneNumber: user.phone || "", // Keep phone number from auth
+          dateOfBirth: new Date(), // Default date
+          businessName: "", // Empty - no placeholder
+          email: "", // Empty - no placeholder
+          address: "", // Empty - no placeholder
+          city: "", // Empty - no placeholder
+          pinCode: "", // Empty - no placeholder
+          state: "", // Empty - no placeholder
+          category: "Veg", // Default category
+          specialization: "", // Empty - no placeholder
+        };
+        
+        console.log("📝 [PROFILE_COMPONENT] Empty form data set (only phone number populated):", emptyFormData);
+        setFormData(emptyFormData);
+
+        // Initialize empty bank data
+        console.log("🏦 [PROFILE_COMPONENT] Initializing empty bank data for new profile");
+        setBankData({
+          bankName: "",
+          bankBranch: "",
+          accountNumber: "",
+          accountHolder: "",
+          ifscCode: "",
+          customerId: "",
+          phoneNumber: user.phone || "", // Keep phone number
+          passBook: "",
+          aadhaarCard: "",
+          panCard: "",
           city: "",
           pinCode: "",
           state: "",
-          category: "Veg",
-          specialization: "",
         });
-        
-        // Keep bank data empty
-        setBankData(null);
+
+        // Clear images for new profile
         setProfileImage(null);
         setMessImages([]);
       }
+      
+      console.log("✅ [PROFILE_COMPONENT] Form setup completed:", {
+        isProfile: user.isProfile,
+        hasPhoneNumber: !!user.phone,
+        formDataPopulated: user.isProfile === true ? "Full backend data" : "Empty form with phone only"
+      });
     } else {
       console.log("⚠️ [PROFILE_COMPONENT] No user data available in useEffect");
     }
   }, [user]);
+  
+  // Debug effect to track form data changes
+  useEffect(() => {
+    console.log("📝 [PROFILE_COMPONENT] Form data updated:", {
+      firstName: formData.firstName,
+      lastName: formData.lastName,
+      businessName: formData.businessName,
+      email: formData.email,
+      phoneNumber: formData.phoneNumber,
+      city: formData.city,
+      state: formData.state,
+      pinCode: formData.pinCode
+    });
+  }, [formData]);
+  
+  // Debug effect to track bank data changes
+  useEffect(() => {
+    console.log("🏦 [PROFILE_COMPONENT] Bank data updated:", {
+      bankName: bankData?.bankName,
+      accountHolder: bankData?.accountHolder,
+      accountNumber: bankData?.accountNumber,
+      ifscCode: bankData?.ifscCode
+    });
+  }, [bankData]);
   
   console.log("🔍 [PROFILE_COMPONENT] Redux state:", {
     hasUser: !!user,
@@ -378,12 +495,11 @@ const RestaurantProfile: React.FC = () => {
     try {
       console.log("🔄 [PROFILE_COMPONENT] Starting profile update...");
       console.log("🔑 [PROFILE_COMPONENT] Token available:", !!token);
-      console.log("🌐 [PROFILE_COMPONENT] API Base URL:", "https://api.mangiee.com");
       
-      // Test network connectivity first
+      // Test network connectivity first using the configured API URL
       try {
         console.log("🌐 [PROFILE_COMPONENT] Testing network connectivity...");
-        const testResponse = await fetch('http://192.168.1.4:3001/api/restaurant/profile', {
+        const testResponse = await fetch(`${API_URLS.PROFILE}`, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -489,7 +605,7 @@ const RestaurantProfile: React.FC = () => {
       console.log("📤 [PROFILE_COMPONENT] Calling apiConnector.updateProfileWithMedia...");
       
       // Update profile with media files
-      const response = await apiConnector.updateProfileWithMedia(profileData, files);
+      const response = await apiConnector.updateProfileWithMedia(profileData, files, token);
       
       console.log("📥 [PROFILE_COMPONENT] API response received:", response);
       
@@ -500,15 +616,31 @@ const RestaurantProfile: React.FC = () => {
         console.log("🔄 [PROFILE_COMPONENT] Dispatching updateUserProfile to Redux");
         dispatch(updateUserProfile(response.data));
         
+        // Show success message and navigate to dashboard
+        console.log("🎯 [PROFILE_COMPONENT] Profile update successful, preparing navigation to dashboard");
+        
+        // Auto-navigate to dashboard after 3 seconds (fallback)
+        const autoNavigateTimer = setTimeout(() => {
+          console.log("⏰ [PROFILE_COMPONENT] Auto-navigation to dashboard triggered");
+          router.push("/(restaurant)");
+        }, 3000);
+        
         Alert.alert(
           "Success", 
-          "Profile updated successfully!",
+          "Profile updated successfully! You will be redirected to the dashboard.",
           [
             {
               text: "OK",
               onPress: () => {
-                // Navigate to dashboard or show success message
-                console.log("🎯 [PROFILE_COMPONENT] Profile update completed, user can now proceed");
+                // Clear auto-navigation timer
+                clearTimeout(autoNavigateTimer);
+                // Navigate to dashboard after successful profile update
+                console.log("🎯 [PROFILE_COMPONENT] Profile update completed, navigating to dashboard");
+                // Small delay to ensure user sees the success message
+                setTimeout(() => {
+                  console.log("🚀 [PROFILE_COMPONENT] Starting navigation to dashboard");
+                  router.push("/(restaurant)");
+                }, 500);
               }
             }
           ]
@@ -725,6 +857,18 @@ const RestaurantProfile: React.FC = () => {
     return style;
   };
 
+  const openImageModal = (image: ImageAsset) => {
+    console.log("🖼️ [PROFILE_COMPONENT] Opening image modal for:", image);
+    setSelectedImage(image);
+    setImageModalVisible(true);
+  };
+
+  const closeImageModal = () => {
+    console.log("🖼️ [PROFILE_COMPONENT] Closing image modal");
+    setSelectedImage(null);
+    setImageModalVisible(false);
+  };
+
   console.log("🏦 [PROFILE_COMPONENT] About to render BankDetailsSection with data:", bankData);
 
   return (
@@ -884,7 +1028,7 @@ const RestaurantProfile: React.FC = () => {
               keyboardType="email-address"
               style={getInputStyle("email")}
               outlineStyle={getOutlineStyle("email")}
-              placeholder="example@gmail.com"
+              placeholder={user?.isProfile ? "" : "example@gmail.com"}
               textColor="#333"
             />
           </View>
@@ -911,7 +1055,7 @@ const RestaurantProfile: React.FC = () => {
             <View style={styles.thirdWidth}>
               <MenuDropdown
                 value={formData.city}
-                placeholder="Select City"
+                placeholder={user?.isProfile ? "" : "Select City"}
                 options={CITIES}
                 onSelect={(value) => handleInputChange("city", value)}
                 fieldName="city"
@@ -921,14 +1065,13 @@ const RestaurantProfile: React.FC = () => {
                 onBlur={handleBlur}
                 getInputStyle={getInputStyle}
                 getOutlineStyle={getOutlineStyle}
-              
               />
             </View>
 
             <View style={styles.thirdWidth}>
               <MenuDropdown
                 value={formData.pinCode}
-                placeholder="Select Pin"
+                placeholder={user?.isProfile ? "" : "Select Pin"}
                 options={PIN_CODES}
                 onSelect={(value) => handleInputChange("pinCode", value)}
                 fieldName="pinCode"
@@ -944,7 +1087,7 @@ const RestaurantProfile: React.FC = () => {
             <View style={styles.thirdWidth}>
               <MenuDropdown
                 value={formData.state}
-                placeholder="Select State"
+                placeholder={user?.isProfile ? "" : "Select State"}
                 options={STATES}
                 onSelect={(value) => handleInputChange("state", value)}
                 fieldName="state"
@@ -968,7 +1111,6 @@ const RestaurantProfile: React.FC = () => {
             >
               <View style={styles.radioContainer}>
                 <View style={styles.radioItem}>
-                  
                   <RadioButton value="Veg" color="#ff5722" />
                   <Text>Veg</Text>
                 </View>
@@ -1004,9 +1146,88 @@ const RestaurantProfile: React.FC = () => {
               numberOfLines={4}
               style={getInputStyle("specialization")}
               outlineStyle={getOutlineStyle("specialization")}
-              placeholder="Describe your restaurant's specializations, signature dishes, or unique offerings..."
+              placeholder={user?.isProfile ? "" : "Describe your restaurant's specializations, signature dishes, or unique offerings..."}
               textColor="#333"
             />
+          </View>
+
+          {/* Image Display Section */}
+          <View style={styles.fullWidth}>
+            <Text style={styles.label}>Uploaded Images</Text>
+            
+            {/* Profile Image */}
+            {profileImage && (
+              <View style={styles.imageSection}>
+                <Text style={styles.imageLabel}>Profile Image</Text>
+                <TouchableOpacity onPress={() => openImageModal(profileImage)}>
+                  <Image source={{ uri: profileImage.uri }} style={styles.thumbnail} />
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {/* Mess Images */}
+            {messImages.length > 0 && (
+              <View style={styles.imageSection}>
+                <Text style={styles.imageLabel}>Mess Images ({messImages.length})</Text>
+                <View style={styles.imageRow}>
+                  {messImages.map((image, index) => (
+                    <TouchableOpacity 
+                      key={`mess_${index}`} 
+                      onPress={() => openImageModal(image)}
+                      style={styles.imageContainer}
+                    >
+                      <Image source={{ uri: image.uri }} style={styles.thumbnail} />
+                      <Text style={styles.imageIndex}>Image {index + 1}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+            )}
+
+            {/* Bank Documents */}
+            {(bankDocuments.qrImage || bankDocuments.aadhaar || bankDocuments.pan || bankDocuments.passbook) && (
+              <View style={styles.imageSection}>
+                <Text style={styles.imageLabel}>Bank Documents</Text>
+                <View style={styles.imageRow}>
+                  {bankDocuments.qrImage && (
+                    <TouchableOpacity 
+                      onPress={() => openImageModal(bankDocuments.qrImage)}
+                      style={styles.imageContainer}
+                    >
+                      <Image source={{ uri: bankDocuments.qrImage.uri }} style={styles.thumbnail} />
+                      <Text style={styles.imageIndex}>QR Code</Text>
+                    </TouchableOpacity>
+                  )}
+                  {bankDocuments.aadhaar && (
+                    <TouchableOpacity 
+                      onPress={() => openImageModal(bankDocuments.aadhaar)}
+                      style={styles.imageContainer}
+                    >
+                      <Image source={{ uri: bankDocuments.aadhaar.uri }} style={styles.thumbnail} />
+                      <Text style={styles.imageIndex}>Aadhaar</Text>
+                    </TouchableOpacity>
+                  )}
+                  {bankDocuments.pan && (
+                    <TouchableOpacity 
+                      onPress={() => openImageModal(bankDocuments.pan)}
+                      style={styles.imageContainer}
+                    >
+                      <Image source={{ uri: bankDocuments.pan.uri }} style={styles.thumbnail} />
+                      <Text style={styles.imageIndex}>PAN Card</Text>
+                    </TouchableOpacity>
+                  )}
+                  {bankDocuments.passbook && (
+                    <TouchableOpacity 
+                      onPress={() => openImageModal(bankDocuments.passbook)}
+                      style={styles.imageContainer}
+                    >
+                      <Image source={{ uri: bankDocuments.passbook.uri }} style={styles.thumbnail} />
+                      <Text style={styles.imageIndex}>Passbook</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </View>
+            )}
           </View>
         </View>
 
@@ -1067,11 +1288,40 @@ const RestaurantProfile: React.FC = () => {
             )}
           </>
         )}
+
+        {/* Image Modal */}
+        <Modal
+          visible={imageModalVisible}
+          transparent={true}
+          animationType="fade"
+          onRequestClose={closeImageModal}
+        >
+          <View style={styles.imageModalOverlay}>
+            <View style={styles.imageModalContainer}>
+              {selectedImage && (
+                <Image
+                  source={{ uri: selectedImage.uri }}
+                  style={styles.fullImage}
+                  resizeMode="contain"
+                />
+              )}
+              <IconButton
+                icon="close"
+                size={30}
+                style={styles.closeImageModalButton}
+                iconColor="#fff"
+                onPress={closeImageModal}
+              />
+            </View>
+          </View>
+        </Modal>
       </Surface>
 
       <BankDetailsSection 
         onDataChange={handleBankDataChange} 
         onDocumentsChange={handleBankDocumentsChange}
+        initialData={bankData || undefined}
+        existingDocuments={bankDocuments}
       />
 
       <View style={styles.saveContainer}>
