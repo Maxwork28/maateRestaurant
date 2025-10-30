@@ -180,6 +180,56 @@ class ApiConnector {
     }
   }
 
+  // PUT multipart form data request method
+  private async putFormData<T>(url: string, formData: FormData, token: string | null): Promise<ApiResponse<T>> {
+    try {
+      console.log("📤 [API] Making PUT request to:", url);
+      console.log("📁 [API] FormData contents:", formData);
+      
+      const response = await fetch(url, {
+        method: 'PUT',
+        body: formData,
+        headers: this.getHeaders(token, 'multipart/form-data'),
+      });
+
+      console.log("🔍 [API] Response status:", response.status);
+      console.log("🔍 [API] Response headers:", response.headers);
+      
+      let data: ApiResponse<T>;
+      let responseText: string;
+      try {
+        responseText = await response.text();
+        console.log("🔍 [API] Response text:", responseText.substring(0, 200) + "...");
+        
+        if (responseText.trim() === '') {
+          throw new Error('Empty response from server');
+        }
+        
+        data = JSON.parse(responseText);
+        console.log("📥 [API] Response parsed successfully:", data);
+      } catch (parseError: any) {
+        console.error("❌ [API] JSON Parse Error in putFormData:", parseError);
+        console.error("❌ [API] Response was not valid JSON");
+        console.error("❌ [API] Full response text:", responseText);
+        throw new Error(`Server returned invalid response: ${parseError.message}`);
+      }
+
+      if (!response.ok) {
+        // Handle specific error cases
+        if (response.status === HTTP_STATUS.UNAUTHORIZED) {
+          throw new Error('Session expired. Please login again.');
+        }
+
+        throw new Error(data.message || `HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      return data;
+    } catch (error) {
+      console.error('❌ [API] FormData PUT request error:', error);
+      throw error;
+    }
+  }
+
   // ===== RESTAURANT API METHODS =====
 
   // Send OTP
@@ -240,19 +290,23 @@ class ApiConnector {
       const formData = new FormData();
 
       // Add text fields
-      Object.entries(profileData).forEach(([key, value]) => {
-        if (value !== undefined && value !== null) {
-          if (key === 'dateOfBirth' && value instanceof Date) {
-            formData.append(key, value.toISOString());
-            console.log(`✅ [API] Added ${key} to FormData:`, value.toISOString());
+      if (profileData && typeof profileData === 'object') {
+        Object.entries(profileData).forEach(([key, value]) => {
+          if (value !== undefined && value !== null) {
+            if (key === 'dateOfBirth' && value instanceof Date) {
+              formData.append(key, value.toISOString());
+              console.log(`✅ [API] Added ${key} to FormData:`, value.toISOString());
+            } else {
+              formData.append(key, String(value));
+              console.log(`✅ [API] Added ${key} to FormData:`, String(value));
+            }
           } else {
-            formData.append(key, String(value));
-            console.log(`✅ [API] Added ${key} to FormData:`, String(value));
+            console.log(`⚠️ [API] Skipping ${key} (undefined/null):`, value);
           }
-        } else {
-          console.log(`⚠️ [API] Skipping ${key} (undefined/null):`, value);
-        }
-      });
+        });
+      } else {
+        console.warn("apiConnector: profileData is invalid:", profileData);
+      }
 
       // Add files - convert React Native ImageAsset to proper file objects
       if (files.profileImage) {
@@ -795,6 +849,70 @@ class ApiConnector {
     }
   }
 
+  // Get category by ID
+  async getCategoryById(categoryId: string, token: string | null): Promise<ApiResponse<any>> {
+    try {
+      console.log("🔍 [API] Fetching category by ID:", categoryId);
+      console.log("🌐 [API] Base URL:", this.baseURL);
+      const url = `${this.baseURL}/restaurant/categories/${categoryId}`;
+      console.log("🔗 [API] Full URL:", url);
+      const response = await this.get<any>(url, token);
+      console.log("✅ [API] Category fetched successfully");
+      return response;
+    } catch (error) {
+      console.error("❌ [API] Error fetching category:", error);
+      throw error;
+    }
+  }
+
+  // Update category
+  async updateCategory(categoryId: string, categoryData: any, token: string | null): Promise<ApiResponse<any>> {
+    try {
+      console.log("✏️ [API] Updating category:", categoryId, categoryData);
+      console.log("🌐 [API] Base URL:", this.baseURL);
+      const url = `${this.baseURL}/restaurant/categories/${categoryId}`;
+      console.log("🔗 [API] Full URL:", url);
+      const response = await this.put<any>(url, categoryData, token);
+      console.log("✅ [API] Category updated successfully");
+      return response;
+    } catch (error) {
+      console.error("❌ [API] Error updating category:", error);
+      throw error;
+    }
+  }
+
+  // Update category with image
+  async updateCategoryWithImage(categoryId: string, formData: FormData, token: string | null): Promise<ApiResponse<any>> {
+    try {
+      console.log("✏️ [API] Updating category with image:", categoryId);
+      console.log("🌐 [API] Base URL:", this.baseURL);
+      const url = `${this.baseURL}/restaurant/categories/${categoryId}`;
+      console.log("🔗 [API] Full URL:", url);
+      const response = await this.postFormData(url, formData, token);
+      console.log("✅ [API] Category with image updated successfully");
+      return response;
+    } catch (error) {
+      console.error("❌ [API] Error updating category with image:", error);
+      throw error;
+    }
+  }
+
+  // Delete category
+  async deleteCategory(categoryId: string, token: string | null): Promise<ApiResponse<any>> {
+    try {
+      console.log("🗑️ [API] Deleting category:", categoryId);
+      console.log("🌐 [API] Base URL:", this.baseURL);
+      const url = `${this.baseURL}/restaurant/categories/${categoryId}`;
+      console.log("🔗 [API] Full URL:", url);
+      const response = await this.delete(url, token);
+      console.log("✅ [API] Category deleted successfully");
+      return response;
+    } catch (error) {
+      console.error("❌ [API] Error deleting category:", error);
+      throw error;
+    }
+  }
+
   // ===== ITEM METHODS =====
 
   // Get all items for restaurant
@@ -809,6 +927,22 @@ class ApiConnector {
       return response;
     } catch (error) {
       console.error("❌ [API] Error fetching items:", error);
+      throw error;
+    }
+  }
+
+  // Get item by ID
+  async getItemById(itemId: string, token: string | null): Promise<ApiResponse<any>> {
+    try {
+      console.log("🔍 [API] Fetching item by ID:", itemId);
+      console.log("🌐 [API] Base URL:", this.baseURL);
+      const url = `${this.baseURL}/restaurant/items/${itemId}`;
+      console.log("🔗 [API] Full URL:", url);
+      const response = await this.get(url, token);
+      console.log("✅ [API] Item fetched successfully");
+      return response;
+    } catch (error) {
+      console.error("❌ [API] Error fetching item:", error);
       throw error;
     }
   }
@@ -837,6 +971,22 @@ class ApiConnector {
         name: error.name,
         stack: error.stack
       });
+      throw error;
+    }
+  }
+
+  // Get offer by ID
+  async getOfferById(offerId: string, token: string | null): Promise<ApiResponse<any>> {
+    try {
+      console.log("🔍 [API] Fetching offer by ID:", offerId);
+      console.log("🌐 [API] Base URL:", this.baseURL);
+      const url = `${this.baseURL}/restaurant/offers/${offerId}`;
+      console.log("🔗 [API] Full URL:", url);
+      const response = await this.get(url, token);
+      console.log("✅ [API] Offer fetched successfully");
+      return response;
+    } catch (error) {
+      console.error("❌ [API] Error fetching offer:", error);
       throw error;
     }
   }
@@ -1244,7 +1394,7 @@ class ApiConnector {
       console.log("🔗 [API] Full URL:", url);
       console.log("📁 [API] FormData contents:", formData);
       
-      const response = await this.postFormData(url, formData, token);
+      const response = await this.putFormData(url, formData, token);
       console.log("✅ [API] Item with image updated successfully");
       return response;
     } catch (error) {

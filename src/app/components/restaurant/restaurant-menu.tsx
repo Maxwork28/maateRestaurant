@@ -249,7 +249,7 @@ const ShowMenu = ({ id, userid, flag }: ShowMenuProps) => {
       dates.push({
         date: currentDate.format("D"), // Day number
         fullDate: dateStr,
-        dayName: currentDate.format("ddd").charAt(0), // M, T, W, etc.
+        dayName: currentDate.format("ddd"), // Sun, Mon, Tue, etc.
         hasMeal: mealDates.includes(dateStr)
       });
       currentDate = currentDate.add(1, 'day');
@@ -265,11 +265,38 @@ const ShowMenu = ({ id, userid, flag }: ShowMenuProps) => {
     }
   }, [slotDates, activeDate]);
 
+  // Day name mapping functions
+  const getDisplayDayName = useCallback((apiDayName: string): string => {
+    const dayMap: { [key: string]: string } = {
+      'sunday': 'Sun',
+      'monday': 'Mon', 
+      'tuesday': 'Tue',
+      'wednesday': 'Wed',
+      'thursday': 'Thu',
+      'friday': 'Fri',
+      'saturday': 'Sat'
+    };
+    return dayMap[apiDayName.toLowerCase()] || apiDayName;
+  }, []);
+
+  const getApiDayName = useCallback((displayDayName: string): string => {
+    const dayMap: { [key: string]: string } = {
+      'Sun': 'sunday',
+      'Mon': 'monday',
+      'Tue': 'tuesday', 
+      'Wed': 'wednesday',
+      'Thu': 'thursday',
+      'Fri': 'friday',
+      'Sat': 'saturday'
+    };
+    return dayMap[displayDayName] || displayDayName.toLowerCase();
+  }, []);
+
   // Generate default meal structure with N/A values
   const generateDefaultMealStructure = useCallback(() => {
     console.log("🔄 [SHOW_MENU] generateDefaultMealStructure called with selectedTab:", selectedTab);
     
-    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     return days.map((day, index) => ({
       day: day,
       date: String(index + 1),
@@ -300,12 +327,11 @@ const ShowMenu = ({ id, userid, flag }: ShowMenuProps) => {
       console.log("🔍 [SHOW_MENU] Using database meal data");
       // Convert database weekly meals to frontend format
       const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-      const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
       
       return days.map((day, index) => {
         const dayMeals = databasePlan.weeklyMeals[day as keyof DatabaseWeeklyMeals];
         return {
-          day: dayNames[index],
+          day: getDisplayDayName(day), // Use display day name (Sun, Mon, etc.)
           date: String(index + 1),
           isActive: true,
           planid: selectedTab,
@@ -341,7 +367,7 @@ const ShowMenu = ({ id, userid, flag }: ShowMenuProps) => {
       console.log("🔍 [SHOW_MENU] No database plan, using default N/A structure");
       return generateDefaultMealStructure();
     }
-  }, [databasePlan, selectedTab, generateDefaultMealStructure]);
+  }, [databasePlan, selectedTab, generateDefaultMealStructure, getDisplayDayName]);
 
   // Update meal in database
   const updateMealInDatabase = useCallback(async (day: string, mealType: string, mealData: MealItem[]) => {
@@ -363,9 +389,13 @@ const ShowMenu = ({ id, userid, flag }: ShowMenuProps) => {
     setIsUpdatingMeal(true);
 
     try {
+      // Convert display day name to API day name (Sun -> sunday, Mon -> monday, etc.)
+      const apiDayName = getApiDayName(day);
+      console.log("🔄 [SHOW_MENU] Converted day name:", { display: day, api: apiDayName });
+
       // Convert frontend meal data to database format
       const dbMealData = {
-        day: day.toLowerCase(),
+        day: apiDayName,
         mealType: mealType.toLowerCase(),
         meals: mealData.map(meal => ({
           name: meal.name,
@@ -390,7 +420,7 @@ const ShowMenu = ({ id, userid, flag }: ShowMenuProps) => {
     } finally {
       setIsUpdatingMeal(false);
     }
-  }, [databasePlan, token, fetchPlanFromDatabase]);
+  }, [databasePlan, token, fetchPlanFromDatabase, getApiDayName]);
 
   // Optimized update function with better state management
   const updateMealItems = useCallback(
@@ -571,29 +601,76 @@ const ShowMenu = ({ id, userid, flag }: ShowMenuProps) => {
     <ScrollView style={showMenuStyles.container}>
       <View style={showMenuStyles.topSection}>
         {/* Header Row */}
-        <View style={showMenuStyles.header}>
-          <TouchableOpacity onPress={() => router.back()}>
-            <Ionicons name="arrow-back" size={24} color="black" />
+        <View style={[showMenuStyles.header, { 
+          backgroundColor: '#FDF7F1', 
+          padding: 16, 
+          borderRadius: 16, 
+          elevation: 2,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 1 },
+          shadowOpacity: 0.1,
+          shadowRadius: 2,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }]}>
+          <TouchableOpacity 
+            onPress={() => router.back()}
+            style={{
+              backgroundColor: '#6F32AB',
+              borderRadius: 20,
+              width: 40,
+              height: 40,
+              justifyContent: 'center',
+              alignItems: 'center',
+              flex: 0,
+            }}
+          >
+            <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
           </TouchableOpacity>
-          <View style={{ alignItems: "flex-end" }}>
-            <Text style={showMenuStyles.planText}>
+          
+          <View style={{ 
+            flex: 1, 
+            alignItems: "center", 
+            justifyContent: "center",
+            marginHorizontal: 16,
+          }}>
+            <Text style={[showMenuStyles.planText, { textAlign: 'center' }]}>
               {databasePlan ? databasePlan.name : 'New Plan'}
             </Text>
-            <Text style={showMenuStyles.activeStatus}>
-              {databasePlan ? 
-                (databasePlan.isActive && databasePlan.isAvailable ? "Active" : "Inactive") :
-                "Not Created"
-              }
-            </Text>
+            <View style={{
+              backgroundColor: databasePlan && databasePlan.isActive && databasePlan.isAvailable ? '#4CAF50' : '#FF5722',
+              paddingHorizontal: 12,
+              paddingVertical: 4,
+              borderRadius: 12,
+              marginTop: 4,
+              alignSelf: 'center',
+            }}>
+              <Text style={[showMenuStyles.activeStatus, { color: '#FFFFFF', fontSize: 11 }]}>
+                {databasePlan ? 
+                  (databasePlan.isActive && databasePlan.isAvailable ? "ACTIVE" : "INACTIVE") :
+                  "NOT CREATED"
+                }
+              </Text>
+            </View>
           </View>
+          
+          {/* Empty space to balance the layout */}
+          <View style={{ width: 40, height: 40 }} />
         </View>
         
         {flag && (
           <View
             style={{
-              backgroundColor: "#FFF1EC",
-              borderRadius: 30,
-              padding: 10,
+              backgroundColor: "#FDF7F1",
+              borderRadius: 20,
+              padding: 16,
+              marginTop: 16,
+              elevation: 2,
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 1 },
+              shadowOpacity: 0.1,
+              shadowRadius: 2,
             }}
           >
             {/* Week Row - Show dates from selected slot */}
@@ -629,12 +706,13 @@ const ShowMenu = ({ id, userid, flag }: ShowMenuProps) => {
                     <View style={{
                       marginTop: 4,
                       alignItems: 'center',
-                      justifyContent: 'center'
+                      justifyContent: 'center',
+                      height: 20,
                     }}>
                       {dateInfo.hasMeal ? (
                         // Show checkmark for days with meals
                         <View style={{
-                          backgroundColor: '#FF6B35',
+                          backgroundColor: '#4CAF50',
                           borderRadius: 10,
                           width: 20,
                           height: 20,
@@ -651,7 +729,7 @@ const ShowMenu = ({ id, userid, flag }: ShowMenuProps) => {
                           borderRadius: 10,
                           width: 20,
                           height: 20,
-                          backgroundColor: 'transparent'
+                          backgroundColor: '#F5F5F5'
                         }} />
                       )}
                     </View>
@@ -663,7 +741,7 @@ const ShowMenu = ({ id, userid, flag }: ShowMenuProps) => {
             </View>
 
             {/* Slot Tabs - Horizontal scrollable with fixed height */}
-            <View style={{ marginTop: 10, height: 50 }}>
+            <View style={{ marginTop: 12, height: 50, alignItems: 'center' }}>
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
@@ -719,39 +797,46 @@ const ShowMenu = ({ id, userid, flag }: ShowMenuProps) => {
         )}
       </View>
 
-      <View style={{ maxHeight: flag ? 600 : 750, marginTop: 10 }}>
+      <View style={{ maxHeight: flag ? 600 : 750, marginTop: 16, paddingHorizontal: 8 }}>
         <ScrollView showsVerticalScrollIndicator={false}>
-          <View style={showMenuStyles.matrixContainer}>
-            {/* Header Row: Meal Types */}
-            <View style={showMenuStyles.matrixRow}>
-              <Text style={showMenuStyles.matrixHeaderlabel}>Day</Text>
-              {["Breakfast", "Lunch", "Dinner"].map((mealType) => (
-                <Text key={mealType} style={showMenuStyles.matrixHeader}>
-                  {mealType}
-                </Text>
-              ))}
-            </View>
+          {/* Horizontal ScrollView for Meal Matrix */}
+          <ScrollView 
+            horizontal 
+            showsHorizontalScrollIndicator={true}
+            contentContainerStyle={{ paddingRight: 20 }}
+          >
+            <View style={showMenuStyles.matrixContainer}>
+              {/* Header Row: Meal Types */}
+              <View style={showMenuStyles.matrixRow}>
+                <Text style={showMenuStyles.matrixHeaderlabel}>Day</Text>
+                {["Breakfast", "Lunch", "Dinner"].map((mealType) => (
+                  <Text key={mealType} style={showMenuStyles.matrixHeader}>
+                    {mealType}
+                  </Text>
+                ))}
+              </View>
 
-            {/* Rows: Each Day */}
-            {mealItems.map((meal: any) => {
-              console.log("🔍 [SHOW_MENU] Rendering meal row:", { day: meal.day, planid: meal.planid });
-              return (
-                <View
-                  key={`${meal.day}-${meal.date}`}
-                  style={showMenuStyles.matrixRow}
-                >
-                  <Text style={showMenuStyles.mealType}>{meal.day}</Text>
-                  {["Breakfast", "Lunch", "Dinner"].map((mealType) => (
-                    <MealCell
-                      key={`${meal.day}-${mealType}`}
-                      meal={meal}
-                      mealType={mealType}
-                    />
-                  ))}
-                </View>
-              );
-            })}
-          </View>
+              {/* Rows: Each Day */}
+              {mealItems.map((meal: any) => {
+                console.log("🔍 [SHOW_MENU] Rendering meal row:", { day: meal.day, planid: meal.planid });
+                return (
+                  <View
+                    key={`${meal.day}-${meal.date}`}
+                    style={showMenuStyles.matrixRow}
+                  >
+                    <Text style={showMenuStyles.mealType}>{meal.day}</Text>
+                    {["Breakfast", "Lunch", "Dinner"].map((mealType) => (
+                      <MealCell
+                        key={`${meal.day}-${mealType}`}
+                        meal={meal}
+                        mealType={mealType}
+                      />
+                    ))}
+                  </View>
+                );
+              })}
+            </View>
+          </ScrollView>
         </ScrollView>
 
         <EditMealModal

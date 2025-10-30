@@ -6,7 +6,7 @@ export const planStyles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#FDF7F1',
   },
   header: {
     flexDirection: 'row',
@@ -17,24 +17,22 @@ export const planStyles = StyleSheet.create({
   headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#434140',
   },
   createButton: {
-    backgroundColor: '#FF4500',
+    backgroundColor: '#6F32AB',
     borderRadius: 8,
   },
   planCard: {
-    backgroundColor: '#FFF5F5',
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: '#FDF7F1',
+    borderRadius: 16,
+    padding: 20,
     marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#FFE4E1',
-    elevation: 2,
+    elevation: 4,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowRadius: 8,
   },
   planHeader: {
     flexDirection: 'row',
@@ -44,8 +42,8 @@ export const planStyles = StyleSheet.create({
   },
   planName: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
+    fontWeight: 'bold',
+    color: '#434140',
     flex: 1,
   },
   iconsContainer: {
@@ -65,11 +63,11 @@ export const planStyles = StyleSheet.create({
   price: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#434140',
   },
   period: {
     fontSize: 16,
-    color: '#666',
+    color: '#434140',
     marginLeft: 4,
   },
   featuresContainer: {
@@ -85,11 +83,11 @@ export const planStyles = StyleSheet.create({
   },
   featureText: {
     fontSize: 14,
-    color: '#555',
+    color: '#434140',
     flex: 1,
   },
   setMenuButton: {
-    backgroundColor: '#FF4500',
+    backgroundColor: '#6F32AB',
     borderRadius: 8,
     paddingVertical: 12,
     flex: 1,
@@ -112,7 +110,7 @@ export const planStyles = StyleSheet.create({
     alignItems: 'center',
   },
   editButton: {
-    backgroundColor: '#FF4500',
+    backgroundColor: '#6F32AB',
     borderRadius: 8,
     padding: 4,
     justifyContent: 'center',
@@ -124,7 +122,7 @@ export const planStyles = StyleSheet.create({
 
 export const modalStyles = StyleSheet.create({
   modalContainer: {
-    backgroundColor: 'white',
+    backgroundColor: '#FDF7F1',
     margin: 20,
     borderRadius: 16,
     padding: 20,
@@ -133,14 +131,13 @@ export const modalStyles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 20,
-    color: '#333',
+    color: '#434140',
   },
 
 
 closeIcon: {
-
   alignSelf: 'flex-end',
-  borderColor:'#FF4500'
+  borderColor:'#6F32AB'
 },
 
   inputContainer: {
@@ -150,13 +147,16 @@ closeIcon: {
     fontSize: 14,
     fontWeight: '600',
     marginBottom: 8,
-    color: '#333',
+    color: '#434140',
   },
   textInput: {
-    backgroundColor: '#f8f8f8',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#ddd',
+    backgroundColor: '#FDF7F1',
+    borderRadius: 35,
+    height: 40,
+    borderTopLeftRadius: 35,
+    borderTopRightRadius: 35,
+    borderBottomLeftRadius: 35,
+    borderBottomRightRadius: 35,
   },
   featuresSection: {
     marginBottom: 20,
@@ -170,30 +170,37 @@ closeIcon: {
   featuresTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#333',
+    color: '#434140',
   },
   addFeatureButton: {
-    backgroundColor: '#FF4500',
+    backgroundColor: '#6F32AB',
     borderRadius: 8,
   },
   featureRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-end',
     marginBottom: 5,
     padding: 5,
   },
   featureInput: {
     flex: 1,
     marginRight: 12,
-    backgroundColor: 'white',
-    borderRadius:18
+    backgroundColor: '#FDF7F1',
+    borderRadius: 35,
+    height: 40,
+    borderTopLeftRadius: 35,
+    borderTopRightRadius: 35,
+    borderBottomLeftRadius: 35,
+    borderBottomRightRadius: 35,
   },
   deleteFeatureButton: {
-    borderColor:'#FF4500',
+    borderColor:'#6F32AB',
     display:'flex',
     justifyContent:'center',
     alignItems:'center',
-    marginTop:15
+    marginBottom: 0,
+    height: 40,
+    width: 40,
   },
   modalActions: {
     flexDirection: 'row',
@@ -201,11 +208,11 @@ closeIcon: {
     marginTop: 20,
   },
   deleteButton: {
-    backgroundColor: '#FF4500',
+    backgroundColor: '#6F32AB',
     borderRadius: 8,
   },
   saveButton: {
-    backgroundColor: '#FF4500',
+    backgroundColor: '#6F32AB',
     borderRadius: 8
   },
   scrollView: {

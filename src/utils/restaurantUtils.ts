@@ -180,7 +180,13 @@ export const compressImage = async (
 export const createFormData = (data: Record<string, any>): FormData => {
   const formData = new FormData();
   
-  Object.entries(data).forEach(([key, value]) => {
+  if (!data || typeof data !== 'object') {
+    console.warn("restaurantUtils: createFormData called with invalid data:", data);
+    return formData;
+  }
+  
+  if (data && typeof data === 'object') {
+    Object.entries(data).forEach(([key, value]) => {
     if (value !== undefined && value !== null) {
       if (value instanceof File) {
         formData.append(key, value);
@@ -199,6 +205,7 @@ export const createFormData = (data: Record<string, any>): FormData => {
       }
     }
   });
+  }
   
   return formData;
 };

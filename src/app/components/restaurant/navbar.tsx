@@ -1,5 +1,5 @@
 import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useRouter, usePathname } from "expo-router";
 import React, { useState, useEffect } from "react";
 import {
   Image,
@@ -11,12 +11,14 @@ import {
   UIManager,
   View,
   Alert,
+  ScrollView,
 } from "react-native";
 import { Text } from "react-native-paper";
 import { styles } from "../css/restaurant/restaurantnavbar";
 import { useAppSelector, useAppDispatch } from "../../../store/hooks";
 import { apiConnector } from "../../../services/apiConnector";
-import { updateUserProfile } from "../../../store/slices/authSlice";
+import { updateUserProfile, clearCredentials } from "../../../store/slices/authSlice";
+import { useNavigationPersistence } from "../../hooks/useNavigationPersistence";
 
 if (Platform.OS === "android") {
   UIManager.setLayoutAnimationEnabledExperimental &&
@@ -38,10 +40,12 @@ const menuItems = [
     icon: "account-tie",
     route: "/(restaurant)/drivers",
   },
+  { label: "Logout", icon: "exit-to-app", route: "logout", isLogout: true },
 ];
 const Navbar = ({ children }: Props) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const router = useRouter();
+  const pathname = usePathname();
   const [activeMenu, setActiveMenu] = useState("Dashboard");
   const [isLoading, setIsLoading] = useState(false);
   
@@ -49,8 +53,39 @@ const Navbar = ({ children }: Props) => {
   const { user, token } = useAppSelector((state) => state.auth);
   const dispatch = useAppDispatch();
   
+  // Use navigation persistence hook
+  const { saveCurrentRoute, restoreRoute, isRestored, clearSavedRoute } = useNavigationPersistence();
+  
   // Use user's online status from Redux state
   const isOnline = user?.isOnline || false;
+
+  // Function to get menu label from route
+  const getMenuLabelFromRoute = (route: string): string => {
+    const menuItem = menuItems.find(item => item.route === route);
+    return menuItem ? menuItem.label : "Dashboard";
+  };
+
+  // Debug: Log menu items
+  useEffect(() => {
+    console.log("🔍 [NAVBAR] Menu items:", menuItems);
+  }, []);
+
+  // Effect to handle route changes and update active menu
+  useEffect(() => {
+    if (pathname && isRestored) {
+      const menuLabel = getMenuLabelFromRoute(pathname);
+      setActiveMenu(menuLabel);
+      console.log('🔄 [NAVBAR] Route changed to:', pathname, 'Menu:', menuLabel);
+    }
+  }, [pathname, isRestored]);
+
+  // Effect to restore saved route on app start
+  useEffect(() => {
+    if (user && token && !isRestored) {
+      console.log('🔄 [NAVBAR] Restoring route for authenticated user');
+      restoreRoute();
+    }
+  }, [user, token, isRestored, restoreRoute]);
 
   const handleMenuToggle = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -106,9 +141,49 @@ const Navbar = ({ children }: Props) => {
     router.push("/(restaurant)/notifications" as any);
   };
 
+  const handleLogout = () => {
+    Alert.alert(
+      "Logout",
+      "Are you sure you want to logout?",
+      [
+        {
+          text: "Cancel",
+          style: "cancel"
+        },
+        {
+          text: "Logout",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              console.log("🚪 [NAVBAR] Logging out user...");
+              
+              // Clear saved route
+              await clearSavedRoute();
+              
+              // Clear Redux state
+              dispatch(clearCredentials());
+              
+              // Close menu first
+              setIsMenuOpen(false);
+              
+              // Navigate to login screen and unmount current route
+              router.dismissAll();
+              router.replace("/(auth)" as any);
+              
+              console.log("✅ [NAVBAR] User logged out successfully");
+            } catch (error) {
+              console.error("❌ [NAVBAR] Error during logout:", error);
+              Alert.alert("Error", "Failed to logout. Please try again.");
+            }
+          }
+        }
+      ]
+    );
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar backgroundColor="#fff" />
+      <StatusBar backgroundColor="#FDF7F1" />
       <View style={styles.navbar}>
         <Text style={styles.logoText}>MANGIEE</Text>
         <TouchableOpacity
@@ -139,7 +214,7 @@ const Navbar = ({ children }: Props) => {
 
         <View style={styles.rightIcons}>
           <TouchableOpacity onPress={handleNotification} style={{ marginRight: 16 }}>
-            <Feather name="bell" size={24} color="#000" />
+            <Feather name="bell" size={24} color="#434140" />
           </TouchableOpacity>
 
           <TouchableOpacity onPress={handleProfile}>
@@ -160,43 +235,57 @@ const Navbar = ({ children }: Props) => {
           </TouchableOpacity>
 
           <TouchableOpacity onPress={handleMenuToggle}>
-            <Feather name={isMenuOpen ? "x" : "menu"} size={24} color="#000" />
+            <Feather name={isMenuOpen ? "x" : "menu"} size={24} color="#434140" />
           </TouchableOpacity>
         </View>
       </View>
 
       {isMenuOpen && (
-        <View style={styles.drawerContainer}>
+        <ScrollView style={styles.drawerContainer} showsVerticalScrollIndicator={false}>
           {menuItems.map((item: any) => {
             const isActive = activeMenu === item.label;
+            console.log("🔍 [NAVBAR] Rendering menu item:", item.label, "isLogout:", item.isLogout);
             return (
               <TouchableOpacity
                 key={item.label}
-                onPress={() => {
-                  setActiveMenu(item.label);
-                  router.push(item.route);
-                  handleMenuToggle();
+                onPress={async () => {
+                  if (item.isLogout) {
+                    handleLogout();
+                    handleMenuToggle();
+                  } else {
+                    setActiveMenu(item.label);
+                    await saveCurrentRoute(item.route);
+                    router.push(item.route);
+                    handleMenuToggle();
+                  }
                 }}
               >
                 <View
                   style={[
                     styles.menuItem,
                     isActive && {
-                      backgroundColor: "#FA4A0C10",
+                      backgroundColor: "#6F32AB10",
                       borderRadius: 8,
+                    },
+                    item.isLogout && {
+                      borderTopWidth: 1,
+                      borderTopColor: "#E0E0E0",
+                      marginTop: 8,
+                      paddingTop: 16,
                     },
                   ]}
                 >
                   <MaterialCommunityIcons
                     name={item.icon as any}
                     size={20}
-                    color={isActive ? "#FA4A0C" : "#333"}
+                    color={item.isLogout ? "#E43D3D" : (isActive ? "#6F32AB" : "#434140")}
                     style={{ width: 24 }}
                   />
                   <Text
                     style={[
                       styles.menuLabel,
-                      isActive && { color: "#FA4A0C", fontWeight: "600" },
+                      isActive && { color: "#6F32AB", fontWeight: "bold" },
+                      item.isLogout && { color: "#E43D3D", fontWeight: "bold" },
                     ]}
                   >
                     {item.label}
@@ -205,7 +294,7 @@ const Navbar = ({ children }: Props) => {
               </TouchableOpacity>
             );
           })}
-        </View>
+        </ScrollView>
       )}
 
       {/* Content below Navbar and Drawer */}

@@ -58,6 +58,11 @@ const authSlice = createSlice({
         token: string;
       }>
     ) => {
+      console.log("🔐 [AUTH_SLICE] Setting credentials:", {
+        hasUser: !!action.payload.user,
+        hasToken: !!action.payload.token,
+        userIsProfile: action.payload.user?.isProfile
+      });
       state.user = action.payload.user;
       state.token = action.payload.token;
       state.isAuthenticated = true;
@@ -92,6 +97,21 @@ const authSlice = createSlice({
     updateUserProfile: (state, action: PayloadAction<RestaurantProfile>) => {
       state.user = action.payload;
     },
+    
+    // Handle rehydration from persisted state
+    rehydrateAuth: (state, action: PayloadAction<AuthState>) => {
+      console.log("🔄 [AUTH_SLICE] Rehydrating auth state:", {
+        hasUser: !!action.payload.user,
+        hasToken: !!action.payload.token,
+        isAuthenticated: action.payload.isAuthenticated,
+        userIsProfile: action.payload.user?.isProfile
+      });
+      state.user = action.payload.user;
+      state.token = action.payload.token;
+      state.isAuthenticated = action.payload.isAuthenticated;
+      state.isLoading = false;
+      state.error = null;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -123,6 +143,7 @@ export const {
   setError,
   clearError,
   updateUserProfile,
+  rehydrateAuth,
 } = authSlice.actions;
 
 // Export selectors

@@ -1,5 +1,5 @@
 /* eslint-disable react/display-name */
-import { CITIES, PIN_CODES, STATES } from "@/constant/restaurant/country";
+// Removed CITIES, PIN_CODES, STATES imports as we're using text inputs now
 import { useRouter } from "expo-router";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import * as ImagePicker from "expo-image-picker";
@@ -18,9 +18,7 @@ import {
   Button,
   Divider,
   IconButton,
-  Menu,
   RadioButton,
-  Surface,
   Text,
   TextInput,
 } from "react-native-paper";
@@ -30,6 +28,7 @@ import { useAppDispatch, useAppSelector } from "../../../store/hooks";
 import { updateUserProfile, setLoading, setError, clearError } from "../../../store/slices/authSlice";
 import { apiConnector } from "../../../utils";
 import { API_URLS } from "../../../services/apiConfig";
+import { useOrder } from "../../hooks/useOrder";
 
 // Types
 interface FormData {
@@ -45,6 +44,7 @@ interface FormData {
   state: string;
   category: string;
   specialization: string;
+  fssaiNumber: string;
 }
 
 interface ImageAsset {
@@ -54,91 +54,7 @@ interface ImageAsset {
   fileSize?: number;
 }
 
-// Reusable Menu Component - simplified to avoid hook ordering issues
-interface MenuDropdownProps {
-  value: string;
-  placeholder: string;
-  options: string[];
-  onSelect: (value: string) => void;
-  fieldName: string;
-  label: string;
-  style?: any;
-  focusedField?: any;
-  onFocus?: (fieldName: string) => void;
-  onBlur?: () => void;
-  getInputStyle?: (fieldName: string) => any;
-  getOutlineStyle?: (fieldName: string) => any;
-}
-
-const MenuDropdown: React.FC<MenuDropdownProps> = ({
-  value,
-  placeholder,
-  options,
-  onSelect,
-  fieldName,
-  label,
-  style,
-  focusedField,
-  onFocus,
-  onBlur,
-  getInputStyle,
-  getOutlineStyle,
-}) => {
-  const [menuVisible, setMenuVisible] = useState(false);
-
-  const handleMenuItemPress = (selectedValue: string) => {
-    onSelect(selectedValue);
-    setMenuVisible(false);
-  };
-
-  const handleMenuOpen = () => {
-    setMenuVisible(true);
-  };
-
-  const handleMenuDismiss = () => {
-    setMenuVisible(false);
-  };
-
-  return (
-    <View>
-      {label && <Text style={styles.label}>{label}</Text>}
-      <Menu
-        visible={menuVisible}
-        onDismiss={handleMenuDismiss}
-        anchor={
-          <TouchableOpacity
-            onPress={handleMenuOpen}
-            activeOpacity={0.7}
-            style={{ flex: 1 }}
-          >
-            <TextInput
-              value={value}
-              mode="outlined"
-              style={getInputStyle ? getInputStyle(fieldName) : style}
-              outlineStyle={getOutlineStyle ? getOutlineStyle(fieldName) : undefined}
-              placeholder={placeholder}
-              editable={false}
-              right={<TextInput.Icon icon="chevron-down" />}
-              pointerEvents="none"
-              textColor="#333"
-            />
-          </TouchableOpacity>
-        }
-        contentStyle={{ maxHeight: 200 }} // Limit menu height
-      >
-        <ScrollView style={styles.menuScrollView}>
-          {options.map((option: string) => (
-            <Menu.Item
-              key={option}
-              onPress={() => handleMenuItemPress(option)}
-              title={option}
-            />
-          ))}
-        </ScrollView>
-      </Menu>
-    </View>
-  );
-};
+// MenuDropdown component removed as we're using text inputs now
 
 const RestaurantProfile: React.FC = () => {
   console.log("🔄 [PROFILE_COMPONENT] Component rendering...");
@@ -147,13 +63,14 @@ const RestaurantProfile: React.FC = () => {
   const dispatch = useAppDispatch();
   const router = useRouter();
   const { user, token, isLoading: authLoading } = useAppSelector((state) => state.auth);
+  const { setTooltipEnabled } = useOrder();
   
   // Initialize all state hooks first
   const [formData, setFormData] = useState<FormData>({
     firstName: "",
     lastName: "",
     phoneNumber: "",
-    dateOfBirth: new Date(),
+    dateOfBirth: new Date(1900, 0, 0), // Default date that displays as "0/00/0000"
     businessName: "",
     email: "",
     address: "",
@@ -162,6 +79,7 @@ const RestaurantProfile: React.FC = () => {
     state: "",
     category: "Veg",
     specialization: "",
+    fssaiNumber: "",
   });
 
   const [showDatePicker, setShowDatePicker] = useState<boolean>(false);
@@ -185,6 +103,18 @@ const RestaurantProfile: React.FC = () => {
   const [selectedImage, setSelectedImage] = useState<ImageAsset | null>(null);
   const [imageModalVisible, setImageModalVisible] = useState(false);
   
+  // Disable order completion tooltip when profile component is active
+  useEffect(() => {
+    console.log("🚫 [PROFILE_COMPONENT] Disabling order completion tooltip");
+    setTooltipEnabled(false);
+    
+    // Re-enable tooltip when component unmounts
+    return () => {
+      console.log("✅ [PROFILE_COMPONENT] Re-enabling order completion tooltip");
+      setTooltipEnabled(true);
+    };
+  }, [setTooltipEnabled]);
+
   // Load existing profile data when component mounts
   useEffect(() => {
     console.log("🔄 [PROFILE_COMPONENT] useEffect triggered with user:", user);
@@ -217,7 +147,7 @@ const RestaurantProfile: React.FC = () => {
           firstName: user.firstName || "",
           lastName: user.lastName || "",
           phoneNumber: user.phone || "", // Always keep phone number
-          dateOfBirth: user.dateOfBirth ? new Date(user.dateOfBirth) : new Date(),
+          dateOfBirth: user.dateOfBirth ? new Date(user.dateOfBirth) : new Date(1900, 0, 0),
           businessName: user.businessName || "",
           email: user.email || "",
           address: user.address || "",
@@ -226,6 +156,7 @@ const RestaurantProfile: React.FC = () => {
           state: user.state || "",
           category: user.category || "Veg",
           specialization: user.specialization || "",
+          fssaiNumber: user.fssaiNumber || "",
         };
         
         console.log("📝 [PROFILE_COMPONENT] Form data populated from backend:", newFormData);
@@ -318,7 +249,7 @@ const RestaurantProfile: React.FC = () => {
           firstName: "", // Empty - no placeholder
           lastName: "", // Empty - no placeholder
           phoneNumber: user.phone || "", // Keep phone number from auth
-          dateOfBirth: new Date(), // Default date
+          dateOfBirth: new Date(1900, 0, 0), // Default date that displays as "0/00/0000" // Default date
           businessName: "", // Empty - no placeholder
           email: "", // Empty - no placeholder
           address: "", // Empty - no placeholder
@@ -327,6 +258,7 @@ const RestaurantProfile: React.FC = () => {
           state: "", // Empty - no placeholder
           category: "Veg", // Default category
           specialization: "", // Empty - no placeholder
+          fssaiNumber: "", // Empty - no placeholder
         };
         
         console.log("📝 [PROFILE_COMPONENT] Empty form data set (only phone number populated):", emptyFormData);
@@ -443,6 +375,7 @@ const RestaurantProfile: React.FC = () => {
       "firstName",
       "email",
       "businessName",
+      "fssaiNumber",
     ];
     const requiredBankFields = [
       "accountHolder",
@@ -531,6 +464,7 @@ const RestaurantProfile: React.FC = () => {
         state: formData.state,
         category: formData.category as "Veg" | "Non Veg" | "Mix",
         specialization: formData.specialization,
+        fssaiNumber: formData.fssaiNumber,
         
         // Bank details - these should match backend field names
         bankName: bankData?.bankName,
@@ -685,6 +619,213 @@ const RestaurantProfile: React.FC = () => {
       ...prev,
       [field]: value,
     }));
+
+    // Auto-fill city and state when pin code is entered
+    if (field === "pinCode" && typeof value === "string" && value.length === 6) {
+      console.log("🚀 [PROFILE_COMPONENT] Triggering pin code lookup for:", value);
+      handlePinCodeLookup(value);
+    } else if (field === "pinCode") {
+      console.log("🔍 [PROFILE_COMPONENT] Pin code field changed but not triggering lookup:", { field, value, length: typeof value === "string" ? value.length : "not string" });
+    }
+  };
+
+  const handlePinCodeLookup = async (pinCode: string): Promise<void> => {
+    try {
+      console.log("🔍 [PROFILE_COMPONENT] Looking up pin code:", pinCode);
+      
+      // Try Postal PIN Code API first (official and reliable)
+      const apiUrl = `https://api.postalpincode.in/pincode/${pinCode}`;
+      console.log("🌐 [PROFILE_COMPONENT] Making API call to:", apiUrl);
+      const response = await fetch(apiUrl);
+      console.log("📡 [PROFILE_COMPONENT] Postal PIN Code API response status:", response.status);
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log("✅ [PROFILE_COMPONENT] Postal PIN Code API response:", data);
+        
+        // Handle array response format
+        const responseData = Array.isArray(data) ? data[0] : data;
+        console.log("📋 [PROFILE_COMPONENT] Processed response data:", responseData);
+        
+        if (responseData.Status === "Success" && responseData.PostOffice && responseData.PostOffice.length > 0) {
+          const postOffice = responseData.PostOffice[0]; // Use first post office data
+          setFormData((prev) => ({
+            ...prev,
+            city: postOffice.District || postOffice.Circle,
+            state: postOffice.State,
+          }));
+          console.log("📍 [PROFILE_COMPONENT] Auto-filled city and state:", { 
+            city: postOffice.District || postOffice.Circle, 
+            state: postOffice.State 
+          });
+        } else {
+          console.log("⚠️ [PROFILE_COMPONENT] Postal PIN Code API response missing data or error:", responseData.Message);
+          await tryAlternativePinCodeAPI(pinCode);
+        }
+      } else {
+        console.log("⚠️ [PROFILE_COMPONENT] Postal PIN Code API failed with status:", response.status);
+        // Fallback to alternative API
+        await tryAlternativePinCodeAPI(pinCode);
+      }
+    } catch (error) {
+      console.log("❌ [PROFILE_COMPONENT] Postal PIN Code API error:", error);
+      // Try alternative API
+      await tryAlternativePinCodeAPI(pinCode);
+    }
+  };
+
+  const tryAlternativePinCodeAPI = async (pinCode: string): Promise<void> => {
+    try {
+      console.log("🔄 [PROFILE_COMPONENT] Trying alternative pin code API...");
+      const response = await fetch(`https://indianpincodes.co.in/api/pincode/${pinCode}`);
+      console.log("📡 [PROFILE_COMPONENT] Alternative API response status:", response.status);
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log("✅ [PROFILE_COMPONENT] Alternative API response:", data);
+        
+        if (data.state && data.city) {
+          setFormData((prev) => ({
+            ...prev,
+            city: data.city,
+            state: data.state,
+          }));
+          console.log("📍 [PROFILE_COMPONENT] Auto-filled from alternative API:", { city: data.city, state: data.state });
+        } else {
+          console.log("⚠️ [PROFILE_COMPONENT] Alternative API response missing city/state data");
+          // Try third API as final fallback
+          await tryThirdPinCodeAPI(pinCode);
+        }
+      } else {
+        console.log("⚠️ [PROFILE_COMPONENT] Alternative API failed with status:", response.status);
+        // Try third API as final fallback
+        await tryThirdPinCodeAPI(pinCode);
+      }
+    } catch (error) {
+      console.log("❌ [PROFILE_COMPONENT] Alternative pin code API error:", error);
+      // Try third API as final fallback
+      await tryThirdPinCodeAPI(pinCode);
+    }
+  };
+
+  const tryThirdPinCodeAPI = async (pinCode: string): Promise<void> => {
+    try {
+      console.log("🔄 [PROFILE_COMPONENT] Trying third pin code API (Pintastic)...");
+      const response = await fetch(`https://pintastic.in/api/pincode/${pinCode}`);
+      console.log("📡 [PROFILE_COMPONENT] Third API response status:", response.status);
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log("✅ [PROFILE_COMPONENT] Third API response:", data);
+        
+        if (data.state && data.city) {
+          setFormData((prev) => ({
+            ...prev,
+            city: data.city,
+            state: data.state,
+          }));
+          console.log("📍 [PROFILE_COMPONENT] Auto-filled from third API:", { city: data.city, state: data.state });
+        } else {
+          console.log("⚠️ [PROFILE_COMPONENT] Third API response missing city/state data");
+          // Try fourth API as final fallback
+          await tryFourthPinCodeAPI(pinCode);
+        }
+      } else {
+        console.log("⚠️ [PROFILE_COMPONENT] Third API failed with status:", response.status);
+        // Try fourth API as final fallback
+        await tryFourthPinCodeAPI(pinCode);
+      }
+    } catch (error) {
+      console.log("❌ [PROFILE_COMPONENT] Third pin code API error:", error);
+      // Try fourth API as final fallback
+      await tryFourthPinCodeAPI(pinCode);
+    }
+  };
+
+  const tryFourthPinCodeAPI = async (pinCode: string): Promise<void> => {
+    try {
+      console.log("🔄 [PROFILE_COMPONENT] Trying fourth pin code API (Indian Cities API)...");
+      const response = await fetch(`https://indian-cities-api-nocbegfhqg.now.sh/`);
+      console.log("📡 [PROFILE_COMPONENT] Fourth API response status:", response.status);
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log("✅ [PROFILE_COMPONENT] Fourth API response received, searching for pin code:", pinCode);
+        
+        // Search for city with matching pin code pattern
+        const matchingCity = data.find((city: any) => 
+          city.pincode && city.pincode.toString().startsWith(pinCode.substring(0, 3))
+        );
+        
+        if (matchingCity) {
+          setFormData((prev) => ({
+            ...prev,
+            city: matchingCity.name,
+            state: matchingCity.state,
+          }));
+          console.log("📍 [PROFILE_COMPONENT] Auto-filled from fourth API:", { city: matchingCity.name, state: matchingCity.state });
+        } else {
+          console.log("⚠️ [PROFILE_COMPONENT] No matching city found in fourth API");
+          // Try local fallback
+          await tryLocalPinCodeFallback(pinCode);
+        }
+      } else {
+        console.log("⚠️ [PROFILE_COMPONENT] Fourth API failed with status:", response.status);
+        // Try local fallback
+        await tryLocalPinCodeFallback(pinCode);
+      }
+    } catch (error) {
+      console.log("❌ [PROFILE_COMPONENT] Fourth pin code API error:", error);
+      // Try local fallback
+      await tryLocalPinCodeFallback(pinCode);
+    }
+  };
+
+  const tryLocalPinCodeFallback = async (pinCode: string): Promise<void> => {
+    console.log("🔄 [PROFILE_COMPONENT] Trying local pin code fallback...");
+    
+    // Common Indian pin codes with their cities and states
+    const pinCodeData: { [key: string]: { city: string; state: string } } = {
+      "110001": { city: "New Delhi", state: "Delhi" },
+      "110002": { city: "New Delhi", state: "Delhi" },
+      "110003": { city: "New Delhi", state: "Delhi" },
+      "400001": { city: "Mumbai", state: "Maharashtra" },
+      "400002": { city: "Mumbai", state: "Maharashtra" },
+      "400003": { city: "Mumbai", state: "Maharashtra" },
+      "560001": { city: "Bangalore", state: "Karnataka" },
+      "560002": { city: "Bangalore", state: "Karnataka" },
+      "560003": { city: "Bangalore", state: "Karnataka" },
+      "600001": { city: "Chennai", state: "Tamil Nadu" },
+      "600002": { city: "Chennai", state: "Tamil Nadu" },
+      "600003": { city: "Chennai", state: "Tamil Nadu" },
+      "700001": { city: "Kolkata", state: "West Bengal" },
+      "700002": { city: "Kolkata", state: "West Bengal" },
+      "700003": { city: "Kolkata", state: "West Bengal" },
+      "380001": { city: "Ahmedabad", state: "Gujarat" },
+      "380002": { city: "Ahmedabad", state: "Gujarat" },
+      "380003": { city: "Ahmedabad", state: "Gujarat" },
+      "500001": { city: "Hyderabad", state: "Telangana" },
+      "500002": { city: "Hyderabad", state: "Telangana" },
+      "500003": { city: "Hyderabad", state: "Telangana" },
+      "302001": { city: "Jaipur", state: "Rajasthan" },
+      "302002": { city: "Jaipur", state: "Rajasthan" },
+      "302003": { city: "Jaipur", state: "Rajasthan" },
+      "201301": { city: "Noida", state: "Uttar Pradesh" },
+      "201302": { city: "Noida", state: "Uttar Pradesh" },
+      "201303": { city: "Noida", state: "Uttar Pradesh" },
+    };
+
+    const locationData = pinCodeData[pinCode];
+    if (locationData) {
+      setFormData((prev) => ({
+        ...prev,
+        city: locationData.city,
+        state: locationData.state,
+      }));
+      console.log("📍 [PROFILE_COMPONENT] Auto-filled from local fallback:", { city: locationData.city, state: locationData.state });
+    } else {
+      console.log("⚠️ [PROFILE_COMPONENT] Pin code not found in local fallback data");
+    }
   };
 
   const handleDateChange = (event: any, selectedDate?: Date): void => {
@@ -723,6 +864,14 @@ const RestaurantProfile: React.FC = () => {
   };
 
   const formatDate = (date: Date): string => {
+    // Check if it's the default date (year 1900, month 0, day 0)
+    if (date.getFullYear() === 1900 && date.getMonth() === 0 && date.getDate() === 0) {
+      return "0/00/0000";
+    }
+    // Check if it's the default date (year 1900, month 11, day 31) - alternative representation
+    if (date.getFullYear() === 1899 && date.getMonth() === 11 && date.getDate() === 31) {
+      return "0/00/0000";
+    }
     const formatted = date.toLocaleDateString("en-GB");
     console.log("📅 [PROFILE_COMPONENT] Formatting date:", { original: date, formatted });
     return formatted;
@@ -873,7 +1022,7 @@ const RestaurantProfile: React.FC = () => {
 
   return (
     <ScrollView style={styles.container} keyboardShouldPersistTaps="handled">
-      <Surface style={styles.surface}>
+      <View style={styles.surface}>
         <View style={styles.header}>
           <View style={styles.avatarContainer}>
             {profileImage ? (
@@ -898,21 +1047,6 @@ const RestaurantProfile: React.FC = () => {
             <Text variant="titleMedium" style={styles.name}>
               {user?.firstName || "Restaurant"} {user?.lastName || "Profile"}
             </Text>
-            <Text variant="bodySmall" style={styles.fssaiText}>
-              Phone: {user?.phone || "N/A"}
-            </Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
-              <View style={{ 
-                width: 8, 
-                height: 8, 
-                borderRadius: 4, 
-                backgroundColor: '#4CAF50', 
-                marginRight: 6 
-              }} />
-              <Text variant="bodySmall" style={{ color: '#4CAF50', fontSize: 10 }}>
-                Connected to: 192.168.1.4:3001
-              </Text>
-            </View>
           </View>
         </View>
 
@@ -975,7 +1109,10 @@ const RestaurantProfile: React.FC = () => {
                 <TextInput
                   value={formatDate(formData.dateOfBirth)}
                   mode="outlined"
-                  style={getInputStyle("dateOfBirth")}
+                  style={[
+                    getInputStyle("dateOfBirth"),
+                    styles.dateInput
+                  ]}
                   outlineStyle={getOutlineStyle("dateOfBirth")}
                   editable={false}
                   right={<TextInput.Icon icon="calendar" />}
@@ -1018,6 +1155,25 @@ const RestaurantProfile: React.FC = () => {
           </View>
 
           <View style={styles.fullWidth}>
+            <Text style={styles.label}>FSSAI Number *</Text>
+            <TextInput
+              value={formData.fssaiNumber}
+              onChangeText={(text: string) =>
+                handleInputChange("fssaiNumber", text)
+              }
+              onFocus={() => handleFocus("fssaiNumber")}
+              onBlur={handleBlur}
+              mode="outlined"
+              keyboardType="numeric"
+              maxLength={14}
+              style={getInputStyle("fssaiNumber")}
+              outlineStyle={getOutlineStyle("fssaiNumber")}
+              placeholder=""
+              textColor="#333"
+            />
+          </View>
+
+          <View style={styles.fullWidth}>
             <Text style={styles.label}>E-mail Address *</Text>
             <TextInput
               value={formData.email}
@@ -1028,7 +1184,7 @@ const RestaurantProfile: React.FC = () => {
               keyboardType="email-address"
               style={getInputStyle("email")}
               outlineStyle={getOutlineStyle("email")}
-              placeholder={user?.isProfile ? "" : "example@gmail.com"}
+              placeholder=""
               textColor="#333"
             />
           </View>
@@ -1043,62 +1199,60 @@ const RestaurantProfile: React.FC = () => {
               onFocus={() => handleFocus("address")}
               onBlur={handleBlur}
               mode="outlined"
-              multiline
-              numberOfLines={3}
               style={getInputStyle("address")}
               outlineStyle={getOutlineStyle("address")}
+              placeholder=""
               textColor="#333"
             />
           </View>
 
           <View style={styles.row}>
-            <View style={styles.thirdWidth}>
-              <MenuDropdown
-                value={formData.city}
-                placeholder={user?.isProfile ? "" : "Select City"}
-                options={CITIES}
-                onSelect={(value) => handleInputChange("city", value)}
-                fieldName="city"
-                label="City"
-                focusedField={focusedField}
-                onFocus={handleFocus}
-                onBlur={handleBlur}
-                getInputStyle={getInputStyle}
-                getOutlineStyle={getOutlineStyle}
-              />
-            </View>
-
-            <View style={styles.thirdWidth}>
-              <MenuDropdown
+            <View style={styles.halfWidth}>
+              <Text style={styles.label}>Pin Code</Text>
+              <TextInput
                 value={formData.pinCode}
-                placeholder={user?.isProfile ? "" : "Select Pin"}
-                options={PIN_CODES}
-                onSelect={(value) => handleInputChange("pinCode", value)}
-                fieldName="pinCode"
-                label="Pin Code"
-                focusedField={focusedField}
-                onFocus={handleFocus}
+                onChangeText={(text: string) => handleInputChange("pinCode", text)}
+                onFocus={() => handleFocus("pinCode")}
                 onBlur={handleBlur}
-                getInputStyle={getInputStyle}
-                getOutlineStyle={getOutlineStyle}
+                mode="outlined"
+                keyboardType="numeric"
+                maxLength={6}
+                style={getInputStyle("pinCode")}
+                outlineStyle={getOutlineStyle("pinCode")}
+                placeholder=""
+                textColor="#333"
               />
             </View>
 
-            <View style={styles.thirdWidth}>
-              <MenuDropdown
-                value={formData.state}
-                placeholder={user?.isProfile ? "" : "Select State"}
-                options={STATES}
-                onSelect={(value) => handleInputChange("state", value)}
-                fieldName="state"
-                label="State"
-                focusedField={focusedField}
-                onFocus={handleFocus}
+            <View style={styles.halfWidth}>
+              <Text style={styles.label}>City</Text>
+              <TextInput
+                value={formData.city}
+                onChangeText={(text: string) => handleInputChange("city", text)}
+                onFocus={() => handleFocus("city")}
                 onBlur={handleBlur}
-                getInputStyle={getInputStyle}
-                getOutlineStyle={getOutlineStyle}
+                mode="outlined"
+                style={getInputStyle("city")}
+                outlineStyle={getOutlineStyle("city")}
+                placeholder=""
+                textColor="#333"
               />
             </View>
+          </View>
+
+          <View style={styles.fullWidth}>
+            <Text style={styles.label}>State</Text>
+            <TextInput
+              value={formData.state}
+              onChangeText={(text: string) => handleInputChange("state", text)}
+              onFocus={() => handleFocus("state")}
+              onBlur={handleBlur}
+              mode="outlined"
+              style={getInputStyle("state")}
+              outlineStyle={getOutlineStyle("state")}
+              placeholder=""
+              textColor="#333"
+            />
           </View>
 
           <View style={styles.fullWidth}>
@@ -1142,11 +1296,9 @@ const RestaurantProfile: React.FC = () => {
               onFocus={() => handleFocus("specialization")}
               onBlur={handleBlur}
               mode="outlined"
-              multiline
-              numberOfLines={4}
               style={getInputStyle("specialization")}
               outlineStyle={getOutlineStyle("specialization")}
-              placeholder={user?.isProfile ? "" : "Describe your restaurant's specializations, signature dishes, or unique offerings..."}
+              placeholder=""
               textColor="#333"
             />
           </View>
@@ -1315,7 +1467,7 @@ const RestaurantProfile: React.FC = () => {
             </View>
           </View>
         </Modal>
-      </Surface>
+      </View>
 
       <BankDetailsSection 
         onDataChange={handleBankDataChange} 

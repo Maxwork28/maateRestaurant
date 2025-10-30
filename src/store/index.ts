@@ -8,6 +8,8 @@ const authPersistConfig = {
   key: 'auth',
   storage: AsyncStorage,
   whitelist: ['user', 'token', 'isAuthenticated'], // Only persist these fields
+  // Add debug mode to see what's being persisted
+  debug: __DEV__,
 };
 
 const persistedAuthReducer = persistReducer(authPersistConfig, authReducer);

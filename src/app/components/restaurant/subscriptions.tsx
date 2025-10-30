@@ -2,8 +2,7 @@ import { filterTabs, subscriptionData } from "@/constant/restaurant/subscription
 import { MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
-import { FlatList, Text, TouchableOpacity, View } from "react-native";
-import { Searchbar } from "react-native-paper";
+import { FlatList, Text, TouchableOpacity, View, TextInput } from "react-native";
 import { styles } from "../css/restaurant/subscriptionscreen";
 
 const SubscriptionList = () => {
@@ -87,14 +86,18 @@ const SubscriptionList = () => {
   return (
     <View style={styles.container}>
       <View style={styles.searchContainer}>
-        <Searchbar
+        <MaterialIcons 
+          name="search" 
+          size={20} 
+          color="#6F32AB" 
+          style={styles.searchIcon}
+        />
+        <TextInput
           placeholder="Search with name"
-          onChangeText={setSearch}
+          placeholderTextColor="#434140"
           value={search}
-          iconColor="#FF6B35"
-          placeholderTextColor="#999"
+          onChangeText={setSearch}
           style={styles.searchBar}
-          inputStyle={{ color: "#333" }}
         />
       </View>
       <View style={styles.tabsContainer}>

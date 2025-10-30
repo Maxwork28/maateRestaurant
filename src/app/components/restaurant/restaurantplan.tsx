@@ -314,6 +314,10 @@ const PlanManagement: React.FC = () => {
   };
 
   const handleDeletePlan = async (planId: number) => {
+    if (!plans || !Array.isArray(plans)) {
+      Alert.alert("Error", "Plans data not available");
+      return;
+    }
     const planToDelete = plans.find(p => p.id === planId);
     if (!planToDelete?.planid) {
       Alert.alert("Error", "Invalid plan selected for deletion");
@@ -359,7 +363,13 @@ const PlanManagement: React.FC = () => {
 
   const handleTogglePlan = async (planId: number) => {
     console.log("🔄 [PLAN_MANAGEMENT] handleTogglePlan called with planId:", planId);
-    console.log("🔍 [PLAN_MANAGEMENT] Available plans:", plans.map(p => ({ id: p.id, planid: p.planid, name: p.name })));
+    
+    if (!plans || !Array.isArray(plans)) {
+      Alert.alert("Error", "Plans data not available");
+      return;
+    }
+    
+    console.log("🔍 [PLAN_MANAGEMENT] Available plans:", plans && Array.isArray(plans) ? plans.map(p => ({ id: p.id, planid: p.planid, name: p.name })) : []);
     
     const planToToggle = plans.find(p => p.id === planId);
     console.log("🔍 [PLAN_MANAGEMENT] Found plan:", planToToggle);
@@ -378,6 +388,16 @@ const PlanManagement: React.FC = () => {
     console.log("🔍 [PLAN_MANAGEMENT] Current plan status:", planToToggle.isActive);
     console.log("🔑 [PLAN_MANAGEMENT] Plan ID for API:", planToToggle.planid);
     
+    // Optimistically update the local state immediately
+    const newStatus = !planToToggle.isActive;
+    setPlans(prevPlans => 
+      prevPlans.map(plan => 
+        plan.id === planId 
+          ? { ...plan, isActive: newStatus }
+          : plan
+      )
+    );
+    
     setIsToggling(true);
 
     try {
@@ -387,19 +407,37 @@ const PlanManagement: React.FC = () => {
       if (response.success && response.data) {
         console.log("✅ [PLAN_MANAGEMENT] Plan availability toggled successfully");
         
-        // Show success message
-        const newStatus = !planToToggle.isActive;
+        // Show success message without refetching
         Alert.alert(
           "Success", 
-          `Plan "${planToToggle.name}" is now ${newStatus ? 'active' : 'inactive'}`,
-          [{ text: "OK", onPress: () => fetchPlans() }]
+          `Plan "${planToToggle.name}" is now ${newStatus ? 'active' : 'inactive'}`
         );
       } else {
         console.error("❌ [PLAN_MANAGEMENT] Toggle failed:", response.message);
+        
+        // Revert the optimistic update on failure
+        setPlans(prevPlans => 
+          prevPlans.map(plan => 
+            plan.id === planId 
+              ? { ...plan, isActive: !newStatus }
+              : plan
+          )
+        );
+        
         Alert.alert("Error", response.message || "Failed to toggle plan availability");
       }
     } catch (error: any) {
       console.error("❌ [PLAN_MANAGEMENT] Error toggling plan:", error);
+      
+      // Revert the optimistic update on error
+      setPlans(prevPlans => 
+        prevPlans.map(plan => 
+          plan.id === planId 
+            ? { ...plan, isActive: !newStatus }
+            : plan
+        )
+      );
+      
       Alert.alert("Error", "Failed to toggle plan availability. Please try again.");
     } finally {
       setIsToggling(false);
@@ -427,12 +465,12 @@ const PlanManagement: React.FC = () => {
               console.log("🔍 [PLAN_MANAGEMENT] Plan.planid:", plan.planid);
               handleTogglePlan(plan.id);
             }}
-            thumbColor={plan.isActive ? '#FF4500' : '#f4f3f4'}
-            trackColor={{ false: '#767577', true: '#FFB366' }}
+            thumbColor={plan.isActive ? '#4CAF50' : '#f4f3f4'}
+            trackColor={{ false: '#767577', true: '#4CAF50' }}
               disabled={isToggling}
           />
             {isToggling && (
-              <ActivityIndicator size="small" color="#FF4500" style={{ marginLeft: 8 }} />
+              <ActivityIndicator size="small" color="#6F32AB" style={{ marginLeft: 8 }} />
             )}
           </View>
         </View>
@@ -525,8 +563,8 @@ const PlanManagement: React.FC = () => {
     return (
       <PaperProvider>
         <View style={[planStyles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-          <ActivityIndicator size="large" color="#FF4500" />
-          <Text style={{ marginTop: 16, color: '#666' }}>Loading plans...</Text>
+          <ActivityIndicator size="large" color="#6F32AB" />
+          <Text style={{ marginTop: 16, color: '#434140' }}>Loading plans...</Text>
         </View>
       </PaperProvider>
     );
@@ -550,19 +588,19 @@ const PlanManagement: React.FC = () => {
         </View>
 
         <ScrollView showsVerticalScrollIndicator={false}>
-          {plans.length > 0 ? (
+          {plans && Array.isArray(plans) && plans.length > 0 ? (
             plans.map(renderPlanCard)
           ) : (
             <View style={{ padding: 20, alignItems: 'center' }}>
-              <Text style={{ color: '#666', fontSize: 16 }}>No plans created yet</Text>
-              <Text style={{ color: '#999', fontSize: 14, marginTop: 8 }}>
+              <Text style={{ color: '#434140', fontSize: 16 }}>No plans created yet</Text>
+              <Text style={{ color: '#434140', fontSize: 14, marginTop: 8 }}>
                 Create your first plan to get started
               </Text>
               <Button
                 mode="outlined"
                 onPress={handleCreatePlan}
                 style={{ marginTop: 16 }}
-                labelStyle={{ color: '#FF4500' }}
+                labelStyle={{ color: '#6F32AB' }}
               >
                 Create Your First Plan
               </Button>
@@ -570,29 +608,10 @@ const PlanManagement: React.FC = () => {
                 mode="outlined"
                 onPress={createTestPlan}
                 style={{ marginTop: 8 }}
-                labelStyle={{ color: '#666' }}
+                labelStyle={{ color: '#434140' }}
                 disabled={isCreating}
               >
                 {isCreating ? 'Creating...' : 'Create Test Plan'}
-              </Button>
-              <Button
-                mode="outlined"
-                onPress={() => {
-                  console.log("🔍 [DEBUG] Current plans state:", plans);
-                  plans.forEach((plan, index) => {
-                    console.log(`🔍 [DEBUG] Plan ${index}:`, {
-                      id: plan.id,
-                      planid: plan.planid,
-                      name: plan.name,
-                      isActive: plan.isActive
-                    });
-                  });
-                  Alert.alert("Debug Info", `Plans count: ${plans.length}\nCheck console for details`);
-                }}
-                style={{ marginTop: 8 }}
-                labelStyle={{ color: '#999' }}
-              >
-                Debug Plans
               </Button>
             </View>
           )}

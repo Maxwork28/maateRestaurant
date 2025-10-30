@@ -1,6 +1,6 @@
-import React from "react";
+import React, { useState } from "react";
 import { Dimensions, Image, ScrollView, View } from "react-native";
-import { Button, Card, Icon, Text } from "react-native-paper";
+import { Button, Card, Icon, Text, Menu, TouchableRipple } from "react-native-paper";
 import Svg, {
   G,
   Path,
@@ -66,21 +66,33 @@ const dashboardData = {
 
 // Custom Bar Chart Component
 const CustomBarChart = ({ data, width, height } : any) => {
-  const maxValue = Math.max(...data);
-  const barWidth = (width - 80) / data.length;
-  const chartHeight = height - 60;
+  const maxValue = 1000; // Fixed max value like in the image
+  const barWidth = (width - 100) / data.length;
+  const chartHeight = height - 80;
   const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
   return (
     <View style={{ alignItems: 'center', marginVertical: 20 }}>
       <Svg width={width} height={height}>
+        {/* Y-axis label */}
+        <SvgText
+          x={20}
+          y={height / 2}
+          fontSize="12"
+          fill="#888"
+          textAnchor="middle"
+          transform={`rotate(-90, 20, ${height / 2})`}
+        >
+          ORDER PERFORMANCE
+        </SvgText>
+        
         {/* Grid Lines */}
-        {[0, 1, 2, 3, 4].map((i) => (
+        {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((i) => (
           <G key={i}>
             <Rect
-              x={40}
-              y={40 + (i * chartHeight / 4)}
-              width={width - 80}
+              x={60}
+              y={40 + (i * chartHeight / 10)}
+              width={width - 100}
               height={1}
               fill="#f0f0f0"
             />
@@ -90,7 +102,7 @@ const CustomBarChart = ({ data, width, height } : any) => {
         {/* Bars */}
         {data.map((value : any, index : any) => {
           const barHeight = (value / maxValue) * chartHeight;
-          const x = 40 + (index * barWidth) + (barWidth * 0.2);
+          const x = 60 + (index * barWidth) + (barWidth * 0.1);
           const y = 40 + chartHeight - barHeight;
           
           return (
@@ -98,61 +110,100 @@ const CustomBarChart = ({ data, width, height } : any) => {
               <Rect
                 x={x}
                 y={y}
-                width={barWidth * 0.6}
+                width={barWidth * 0.8}
                 height={barHeight}
                 fill="#6C63FF"
-                rx={4}
+                rx={2}
               />
-              {/* Month labels */}
-              <SvgText
-                x={x + (barWidth * 0.3)}
-                y={height - 10}
-                fontSize="10"
-                fill="#888"
-                textAnchor="middle"
-              >
-                {months[index]}
-              </SvgText>
             </G>
           );
         })}
         
         {/* Y-axis labels */}
-        {[0, 1, 2, 3, 4].map((i) => (
+        {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((i) => (
           <SvgText
             key={i}
-            x={35}
-            y={45 + (i * chartHeight / 4)}
+            x={55}
+            y={45 + (i * chartHeight / 10)}
             fontSize="10"
             fill="#888"
             textAnchor="end"
           >
-            {Math.round((maxValue * (4 - i)) / 4)}
+            {Math.round((maxValue * (10 - i)) / 10)}
           </SvgText>
         ))}
+        
+         {/* X-axis timeline */}
+         <G>
+           {/* Horizontal line with tick marks */}
+           {Array.from({ length: 13 }, (_, i) => (
+             <G key={i}>
+               {/* Tick marks */}
+               <Rect
+                 x={60 + (i * (width - 120) / 12)}
+                 y={height - 35}
+                 width={1}
+                 height={8}
+                 fill="#D3D3D3"
+               />
+               {/* Main horizontal line segments */}
+               {i < 12 && (
+                 <Rect
+                   x={60 + (i * (width - 120) / 12)}
+                   y={height - 30}
+                   width={(width - 120) / 12}
+                   height={1}
+                   fill="#D3D3D3"
+                 />
+               )}
+             </G>
+           ))}
+           
+           {/* DURATION text */}
+           <SvgText
+             x={width / 2}
+             y={height - 20}
+             fontSize="12"
+             fill="#5A5856"
+             textAnchor="middle"
+           >
+             DURATION
+           </SvgText>
+           
+           {/* Arrow */}
+           <Path
+             d={`M ${width - 40} ${height - 30} L ${width - 35} ${height - 25} L ${width - 35} ${height - 35} Z`}
+             fill="#D3D3D3"
+           />
+         </G>
       </Svg>
     </View>
   );
 };
 
-// Custom Pie Chart Component
+// Custom Pie Chart Component (Hollow/Donut style)
 const CustomPieChart = ({ data, width, height } : any) => {
   const centerX = width / 2;
   const centerY = height / 2;
-  const radius = Math.min(width, height) / 2 - 20;
+  const outerRadius = Math.min(width, height) / 2 - 20;
+  const innerRadius = outerRadius * 0.6; // Make it hollow
   const total = data.reduce((sum : any, item : any) => sum + item.population, 0);
   
   let currentAngle = 0;
   
-  const createArcPath = (centerX : any, centerY : any, radius : any, startAngle : any, endAngle : any) => {
-    const start = polarToCartesian(centerX, centerY, radius, endAngle);
-    const end = polarToCartesian(centerX, centerY, radius, startAngle);
+  const createArcPath = (centerX : any, centerY : any, outerRadius : any, innerRadius : any, startAngle : any, endAngle : any) => {
+    const startOuter = polarToCartesian(centerX, centerY, outerRadius, endAngle);
+    const endOuter = polarToCartesian(centerX, centerY, outerRadius, startAngle);
+    const startInner = polarToCartesian(centerX, centerY, innerRadius, endAngle);
+    const endInner = polarToCartesian(centerX, centerY, innerRadius, startAngle);
+    
     const largeArcFlag = endAngle - startAngle <= Math.PI ? "0" : "1";
     
     return [
-      "M", centerX, centerY,
-      "L", start.x, start.y,
-      "A", radius, radius, 0, largeArcFlag, 0, end.x, end.y,
+      "M", startOuter.x, startOuter.y,
+      "A", outerRadius, outerRadius, 0, largeArcFlag, 0, endOuter.x, endOuter.y,
+      "L", endInner.x, endInner.y,
+      "A", innerRadius, innerRadius, 0, largeArcFlag, 1, startInner.x, startInner.y,
       "Z"
     ].join(" ");
   };
@@ -172,7 +223,7 @@ const CustomPieChart = ({ data, width, height } : any) => {
           const startAngle = currentAngle;
           const endAngle = currentAngle + angle;
           
-          const arcPath = createArcPath(centerX, centerY, radius, startAngle, endAngle);
+          const arcPath = createArcPath(centerX, centerY, outerRadius, innerRadius, startAngle, endAngle);
           currentAngle += angle;
           
           return (
@@ -180,8 +231,7 @@ const CustomPieChart = ({ data, width, height } : any) => {
               key={index}
               d={arcPath}
               fill={item.color}
-              stroke="#fff"
-              strokeWidth="2"
+              stroke="none"
             />
           );
         })}
@@ -196,6 +246,11 @@ const RestaurantDashboard = () => {
     dashboardData;
   const { total, thisMonth, lastMonth, target } = order;
   const progress = target > 0 ? Math.min(1, total / target) : 0;
+  
+  const [selectedYear, setSelectedYear] = useState("2024");
+  const [dropdownVisible, setDropdownVisible] = useState(false);
+  
+  const yearOptions = ["2024", "2023", "2022", "2021"];
 
   const handleWithdraw = () => {
     console.log("Withdraw Clicked");
@@ -232,7 +287,6 @@ const RestaurantDashboard = () => {
         <Card style={[styles.infoCard, styles.greenCard]}>
           <Card.Content>
             <View style={styles.iconRow}>
-              <Icon source="circle" size={10} color="#1AB760" />
               <Text style={styles.infoLabel}>Income</Text>
             </View>
             <Text style={styles.infoAmount}>
@@ -245,7 +299,7 @@ const RestaurantDashboard = () => {
                 <Text style={styles.trendIcon}>↑</Text>
               </View>
               <Text style={[styles.trendText, { color: "#1AB760" }]}>
-                {incomeChange}%
+                +{incomeChange}%
               </Text>
             </View>
           </Card.Content>
@@ -254,8 +308,7 @@ const RestaurantDashboard = () => {
         <Card style={[styles.infoCard, styles.redCard]}>
           <Card.Content>
             <View style={styles.iconRow}>
-              <Icon source="circle" size={10} color="#E43D3D" />
-              <Text style={styles.infoLabel}>Expense</Text>
+              <Text style={styles.expenseLabel}>Expense</Text>
             </View>
             <Text style={styles.infoAmount}>
               ₹{expense.toLocaleString("en-IN")}
@@ -267,7 +320,7 @@ const RestaurantDashboard = () => {
                 <Text style={styles.trendIcon}>↓</Text>
               </View>
               <Text style={[styles.trendText, { color: "#E43D3D" }]}>
-                {Math.abs(expenseChange)}%
+                -{Math.abs(expenseChange)}%
               </Text>
             </View>
           </Card.Content>
@@ -279,9 +332,34 @@ const RestaurantDashboard = () => {
           title="Order Rate"
           titleStyle={styles.cardLabel}
           right={() => (
-            <View style={styles.yearDropdown}>
-              <Text style={styles.yearText}>Year</Text>
-            </View>
+            <Menu
+              visible={dropdownVisible}
+              onDismiss={() => setDropdownVisible(false)}
+              anchor={
+                <TouchableRipple
+                  onPress={() => setDropdownVisible(true)}
+                  style={styles.yearDropdown}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Text style={styles.yearText}>{selectedYear}</Text>
+                    <Icon source="chevron-down" size={14} color="#5A5856" />
+                  </View>
+                </TouchableRipple>
+              }
+            >
+              {yearOptions.map((year) => (
+                <Menu.Item
+                  key={year}
+                  onPress={() => {
+                    setSelectedYear(year);
+                    setDropdownVisible(false);
+                  }}
+                  title={year}
+                  titleStyle={styles.menuItemText}
+                  style={styles.menuItem}
+                />
+              ))}
+            </Menu>
           )}
         />
 
@@ -305,9 +383,11 @@ const RestaurantDashboard = () => {
 
           <View style={styles.rowGap}>
             <Card style={styles.orderSmallCard}>
-              <Card.Content style={{ alignItems: "center" }}>
-                <View style={styles.iconRow}>
-                  <Icon source="circle" size={10} color="#FA4A0C" />
+              <Card.Content style={{ alignItems: "flex-start" }}>
+                <View style={styles.smallCardTopRow}>
+                  <View style={styles.orangeCircle}>
+                    <View style={styles.orangeCircleInner} />
+                  </View>
                   <Text style={styles.smallCardLabel}>This Month</Text>
                 </View>
                 <Text style={styles.smallCardValue}>{thisMonth}</Text>
@@ -315,9 +395,11 @@ const RestaurantDashboard = () => {
             </Card>
 
             <Card style={styles.orderSmallCard}>
-              <Card.Content style={{ alignItems: "center" }}>
-                <View style={styles.iconRow}>
-                  <Icon source="circle" size={10} color="#FF9900" />
+              <Card.Content style={{ alignItems: "flex-start" }}>
+                <View style={styles.smallCardTopRow}>
+                  <View style={styles.orangeCircle}>
+                    <View style={styles.orangeCircleInner} />
+                  </View>
                   <Text style={styles.smallCardLabel}>Last Month</Text>
                 </View>
                 <Text style={styles.smallCardValue}>{lastMonth}</Text>
@@ -328,8 +410,8 @@ const RestaurantDashboard = () => {
           {/* Progress */}
           <View style={styles.progressContainer}>
             <View style={styles.progressHeader}>
-              <Text style={styles.targetText}>Target {target}</Text>
-              <Text style={styles.progressValue}>{total.toFixed(2)}</Text>
+              <Text style={styles.targetText}>Target</Text>
+              <Text style={styles.progressValue}>{target.toLocaleString()}</Text>
             </View>
             
             <View style={styles.progressTrack}>
@@ -343,12 +425,8 @@ const RestaurantDashboard = () => {
           <CustomBarChart 
             data={barChartData} 
             width={screenWidth - 32} 
-            height={260} 
+            height={280} 
           />
-
-          <View style={{ marginTop: 4, alignItems: "center" }}>
-            <Text style={{ color: "#888", fontSize: 12 }}>DURATION</Text>
-          </View>
         </Card.Content>
       </Card>
 
@@ -368,31 +446,32 @@ const RestaurantDashboard = () => {
         </Card.Content>
       </Card>
 
-      {/* Popular Food Pie Chart */}
-      <Card style={[styles.orderCard, { marginTop: 16 }]}>
-        <Card.Title title="Popular Food" titleStyle={styles.cardLabel} />
-        <Card.Content style={{ alignItems: "center" }}>
-          <CustomPieChart 
-            data={dashboardData.popularFood} 
-            width={screenWidth - 32} 
-            height={180} 
-          />
+       {/* Popular Food Pie Chart */}
+       <Card style={[styles.orderCard, { marginTop: 16 }]}>
+         <Card.Title title="Popular Food" titleStyle={styles.cardLabel} />
+         <Card.Content style={{ alignItems: "center" }}>
+           <CustomPieChart 
+             data={dashboardData.popularFood} 
+             width={screenWidth - 32} 
+             height={180} 
+           />
 
-          <View style={styles.legendContainer}>
-            {dashboardData.popularFood.map((item, idx) => (
-              <View style={styles.legendItem} key={idx}>
-                <View
-                  style={[styles.legendDot, { backgroundColor: item.color }]}
-                />
-                <Text style={styles.legendLabel}>
-                  {item.name} ({Math.round((item.population / 1595) * 100)}%)
-                </Text>
-                <Text style={styles.legendValue}>{item.population}</Text>
-              </View>
-            ))}
-          </View>
-        </Card.Content>
-      </Card>
+           <View style={styles.legendContainer}>
+             <Text style={styles.legendTitle}>Legend</Text>
+             {dashboardData.popularFood.map((item, idx) => (
+               <View style={styles.legendItem} key={idx}>
+                 <View
+                   style={[styles.legendDot, { backgroundColor: item.color }]}
+                 />
+                 <Text style={styles.legendLabel}>
+                   {item.name} ({Math.round((item.population / 1595) * 100)}%)
+                 </Text>
+                 <Text style={styles.legendValue}>{item.population}</Text>
+               </View>
+             ))}
+           </View>
+         </Card.Content>
+       </Card>
     </ScrollView>
   );
 };

@@ -96,17 +96,17 @@ const AuthScreen = () => {
                     placeholder="Enter 10-digit number"
                     keyboardType="phone-pad"
                     underlineColor="#E5E5E5"
-                    activeUnderlineColor="#FA4A0C"
+                    activeUnderlineColor="#6F32AB"
                     style={styles.textInput}
                     contentStyle={styles.textInputContent}
                     theme={{
                       colors: {
-                        text: "#333333",
+                        text: "#434140",
                         placeholder: "#CCCCCC",
                         background: "transparent",
                       },
                     }}
-                    textColor="#333"
+                    textColor="#434140"
                     maxLength={10}
                   />
                 </View>
@@ -119,7 +119,7 @@ const AuthScreen = () => {
               <View style={styles.loginButtonContainer}>
                 <Button
                   mode="contained"
-                  buttonColor="#FA4A0C"
+                  buttonColor="#6F32AB"
                   contentStyle={styles.loginButtonContent}
                   labelStyle={styles.loginLabel}
                   onPress={handleLogin}
@@ -142,14 +142,14 @@ export default AuthScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#FDF7F1",
   },
   keyboardAvoidingView: {
     flex: 1,
   },
   scrollContent: {
     flexGrow: 1,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#FDF7F1",
   },
   header: {
     paddingHorizontal: 24,
@@ -161,13 +161,13 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderWidth: 1,
-    borderColor: "#FA4A0C",
+    borderColor: "#6F32AB",
     borderRadius: 20,
   },
   skipText: {
-    color: "#FA4A0C",
+    color: "#6F32AB",
     fontSize: 14,
-    fontWeight: "500",
+    fontWeight: "bold",
   },
   logoContainer: {
     alignItems: "center",
@@ -182,9 +182,9 @@ const styles = StyleSheet.create({
   },
   inputLabel: {
     fontSize: 16,
-    color: "#333333",
+    color: "#434140",
     marginBottom: 12,
-    fontWeight: "500",
+    fontWeight: "bold",
   },
   textInput: {
     backgroundColor: "transparent",
@@ -212,7 +212,7 @@ const styles = StyleSheet.create({
   },
   loginLabel: {
     fontSize: 18,
-    fontWeight: "600",
+    fontWeight: "bold",
     color: "#FFFFFF",
     letterSpacing: 0.5,
   },

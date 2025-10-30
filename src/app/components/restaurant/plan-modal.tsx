@@ -97,7 +97,7 @@ const PlanModal: React.FC<PlanModalProps> = ({
         <IconButton
           mode="outlined"
           icon="close"
-          iconColor="#FF4500"
+          iconColor="#6F32AB"
           size={24}
           onPress={onDismiss}
           style={modalStyles.closeIcon}
@@ -108,10 +108,10 @@ const PlanModal: React.FC<PlanModalProps> = ({
           <TextInput
             value={planName}
             onChangeText={setPlanName}
-            placeholder="Enter plan name"
             style={modalStyles.textInput}
             mode="outlined"
-            textColor="#333"
+            textColor="#434140"
+            contentStyle={{ borderRadius: 35 }}
           />
         </View>
 
@@ -120,11 +120,11 @@ const PlanModal: React.FC<PlanModalProps> = ({
           <TextInput
             value={planPrice}
             onChangeText={setPlanPrice}
-            placeholder="₹440.00"
             keyboardType="numeric"
             style={modalStyles.textInput}
             mode="outlined"
-            textColor="#333"
+            textColor="#434140"
+            contentStyle={{ borderRadius: 35 }}
           />
         </View>
 
@@ -156,16 +156,16 @@ const PlanModal: React.FC<PlanModalProps> = ({
                     onChangeText={(text) =>
                       updateFeature(feature.id, "name", text)
                     }
-                    placeholder="Feature details"
                     style={modalStyles.featureInput}
                     mode="outlined"
-                    textColor="#333"
+                    textColor="#434140"
+                    contentStyle={{ borderRadius: 35 }}
                   />
                 </View>
                 <IconButton
                   mode="outlined"
                   icon="delete-outline"
-                  iconColor="#FF4500"
+                  iconColor="#6F32AB"
                   size={24}
                   onPress={() => deleteFeature(feature.id)}
                   style={modalStyles.deleteFeatureButton}

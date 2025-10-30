@@ -81,9 +81,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   continueText: {
-    color: '#fff',
+    color: '#FFFFFF',
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: 'bold',
   },
 });
 

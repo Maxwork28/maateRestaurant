@@ -3,17 +3,18 @@ import { StyleSheet } from "react-native";
 export const styles = StyleSheet.create({
   listContainer: {
     padding: 10,
+    backgroundColor: '#FDF7F1',
   },
   cardContainer: {
-    backgroundColor: "#fff",
-    borderRadius: 10,
-    padding: 10,
+    backgroundColor: "#FDF7F1",
+    borderRadius: 16,
+    padding: 16,
     marginBottom: 15,
-    elevation: 3,
+    elevation: 4,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 2,
+    shadowRadius: 8,
   },
   header: {
     flexDirection: "row",
@@ -32,11 +33,11 @@ export const styles = StyleSheet.create({
   restaurantName: {
     fontWeight: "bold",
     fontSize: 16,
-    color: "#FF4500",
+    color: "#6F32AB",
   },
   location: {
     fontSize: 12,
-    color: "#666",
+    color: "#434140",
   },
   ratingContainer: {
     flexDirection: "row",
@@ -45,7 +46,7 @@ export const styles = StyleSheet.create({
   },
   rating: {
     fontSize: 12,
-    color: "#666",
+    color: "#434140",
     marginLeft: 3,
   },
   userInfo: {
@@ -56,24 +57,26 @@ export const styles = StyleSheet.create({
     fontWeight: "bold",
     fontSize: 12,
     marginTop: 2,
+    color: "#6F32AB",
   },
   userLocation: {
     fontSize: 10,
-    color: "#999",
+    color: "#434140",
   },
  descriptionContainer: {
-  backgroundColor: "#F9F9F9",
-  borderRadius: 10,
+  backgroundColor: "#FDF7F1",
+  borderRadius: 12,
   padding: 15,
   marginVertical: 8,
   position: "relative",
 },
 
 descriptionText: {
-  color: "#333",
+  color: "#434140",
   fontSize: 13,
   lineHeight: 18,
   textAlign: "center",
+  fontWeight: "500",
 },
 
 openQuote: {
@@ -90,7 +93,8 @@ closeQuote: {
 
   footerText: {
     fontSize: 12,
-    color: "#999",
+    color: "#434140",
     marginTop: 2,
+    fontWeight: "500",
   },
 });

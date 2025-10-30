@@ -8,6 +8,7 @@ export interface OrderContextType {
   checkCompletedOrders: () => Promise<void>;
   clearDismissedOrders: () => void;
   markOrdersAsProcessed: (orderIds: number[]) => void;
+  setTooltipEnabled: (enabled: boolean) => void;
 }
 
 // Create Order Context with default value
@@ -19,6 +20,7 @@ export const OrderProvider = ({ children }: { children: React.ReactNode }) => {
   const [showTooltip, setShowTooltip] = useState(false);
   const [dismissedOrderIds, setDismissedOrderIds] = useState<Set<number>>(new Set());
   const [processedOrderIds, setProcessedOrderIds] = useState<Set<number>>(new Set());
+  const [tooltipEnabled, setTooltipEnabled] = useState(true);
 
   // Function to check for completed orders
   const checkCompletedOrders = async () => {
@@ -33,31 +35,31 @@ export const OrderProvider = ({ children }: { children: React.ReactNode }) => {
           !dismissedOrderIds.has(order.id) && !processedOrderIds.has(order.id)
         );
         
-        if (newOrders.length > 0) {
+        if (newOrders.length > 0 && tooltipEnabled) {
           setCompletedOrders(newOrders);
           setShowTooltip(true);
         }
       }
     } catch (error) {
-      console.log('API call failed, using mock data for testing');
+      console.log('API call failed, no mock data for testing');
       
-      // For testing purposes - use consistent mock data
-      // Use fixed IDs so they can be properly tracked
-      const mockOrders: any[] = [
-        { id: 1, orderNumber: "ORD001", customerName: "John Doe" },
-        { id: 2, orderNumber: "ORD002", customerName: "Jane Smith" },
-        { id: 3, orderNumber: "ORD003", customerName: "Bob Johnson" }
-      ];
+      // For testing purposes - don't show mock orders by default
+      // Only show mock data when explicitly needed for testing
+      // const mockOrders: any[] = [
+      //   { id: 1, orderNumber: "ORD001", customerName: "John Doe" },
+      //   { id: 2, orderNumber: "ORD002", customerName: "Jane Smith" },
+      //   { id: 3, orderNumber: "ORD003", customerName: "Bob Johnson" }
+      // ];
       
-      // Filter out orders that have been dismissed or processed
-      const newOrders = mockOrders.filter(order => 
-        !dismissedOrderIds.has(order.id) && !processedOrderIds.has(order.id)
-      );
+      // Uncomment the lines below to enable mock data for testing
+      // const newOrders = mockOrders.filter(order => 
+      //   !dismissedOrderIds.has(order.id) && !processedOrderIds.has(order.id)
+      // );
       
-      if (newOrders.length > 0) {
-        setCompletedOrders(newOrders);
-        setShowTooltip(true);
-      }
+      // if (newOrders.length > 0) {
+      //   setCompletedOrders(newOrders);
+      //   setShowTooltip(true);
+      // }
     }
   };
 
@@ -77,6 +79,12 @@ export const OrderProvider = ({ children }: { children: React.ReactNode }) => {
 
   // Function to mark specific orders as assigned/processed (permanent)
   const markOrdersAsProcessed = (orderIds: number[]) => {
+    // Validate orderIds parameter
+    if (!Array.isArray(orderIds)) {
+      console.warn("OrderResProvider: markOrdersAsProcessed called with invalid orderIds:", orderIds);
+      return;
+    }
+    
     // Mark as processed permanently
     setProcessedOrderIds(prev => new Set([...prev, ...orderIds]));
     
@@ -106,7 +114,8 @@ export const OrderProvider = ({ children }: { children: React.ReactNode }) => {
       dismissTooltip,
       checkCompletedOrders,
       clearDismissedOrders,
-      markOrdersAsProcessed
+      markOrdersAsProcessed,
+      setTooltipEnabled
     }}>
       {children}
     </OrderContext.Provider>

@@ -1,6 +1,5 @@
-// components/AddItemModal.js
 import * as ImagePicker from "expo-image-picker";
-import React, { useState, useEffect } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import {
   Alert,
   Image,
@@ -17,120 +16,135 @@ import {
   Portal,
   TextInput,
 } from "react-native-paper";
+import { Ionicons } from '@expo/vector-icons';
 import { styles } from "../css/restaurant/additemmodal";
 
-const AddItemModal = ({ visible, onDismiss, onSave, isLoading = false, categories = [] }: any) => {
-  const [itemName, setItemName] = useState("");
-  const [itemCategory, setItemCategory] = useState("");
-  const [itemDetails, setItemDetails] = useState("");
-  const [itemPrice, setItemPrice] = useState("");
-  const [itemAvailability, setItemAvailability] = useState("in-stock");
-  const [dietMeal, setDietMeal] = useState("Yes");
-  const [calories, setCalories] = useState("");
-  const [selectedImage, setSelectedImage] = useState("");
-  const [showCategoryMenu, setShowCategoryMenu] = useState(false);
-  const [showAvailabilityMenu, setShowAvailabilityMenu] = useState(false);
-  const [showDietMenu, setShowDietMenu] = useState(false);
+// Types
+interface Category {
+  id: string;
+  name: string;
+  image?: string;
+  description?: string;
+}
 
-  // Debug component lifecycle
-  useEffect(() => {
-    console.log("🔍 [ADD_ITEM_MODAL] Component mounted/updated");
-    console.log("🔍 [ADD_ITEM_MODAL] Initial state:", {
+interface ItemData {
+  id: string;
+  name: string;
+  category: string;
+  description: string;
+  itemCategory: string;
+  price: number;
+  availability: string;
+  isDietMeal: boolean;
+  calories: number;
+  image: string;
+  restaurant: string;
+  isVegetarian: boolean;
+}
+
+interface AddItemModalProps {
+  visible: boolean;
+  onDismiss: () => void;
+  onSave: (itemData: ItemData) => void;
+  onUpdate?: (itemData: ItemData) => void;
+  isLoading?: boolean;
+  categories?: Category[];
+  editItem?: ItemData | null;
+  isEditMode?: boolean;
+  isViewMode?: boolean;
+}
+
+// Constants
+const DEFAULT_IMAGE = "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&h=300&fit=crop";
+const IMAGE_PICKER_OPTIONS = {
+  mediaTypes: ImagePicker.MediaTypeOptions.Images,
+  allowsEditing: true,
+  aspect: [4, 3] as [number, number],
+  quality: 0.7,
+};
+
+const AVAILABILITY_OPTIONS = [
+  { value: "in-stock", label: "In Stock" },
+  { value: "out-of-stock", label: "Out of Stock" },
+  { value: "limited", label: "Limited" },
+];
+
+const DIET_OPTIONS = ["Yes", "No"];
+
+const AddItemModal: React.FC<AddItemModalProps> = React.memo(({ 
+  visible, 
+  onDismiss, 
+  onSave, 
+  onUpdate,
+  isLoading = false, 
+  categories = [],
+  editItem = null,
+  isEditMode = false,
+  isViewMode = false
+}) => {
+  // Debug props
+  React.useEffect(() => {
+    console.log("🔍 [MODAL] AddItemModal props:", {
       visible,
-      categories: categories.length,
-      itemCategory
+      isEditMode,
+      isViewMode,
+      editItem: editItem ? { name: editItem.name, id: editItem.id } : null
     });
-    
-    // Cleanup function to log when component unmounts
-    return () => {
-      console.log("🔍 [ADD_ITEM_MODAL] Component unmounting");
-      console.log("🔍 [ADD_ITEM_MODAL] Final state before unmount:", {
-        visible,
-        categories: categories.length,
-        itemCategory
-      });
-    };
-  }, []); // Only run once on mount
+  }, [visible, isEditMode, isViewMode, editItem]);
+  const [formData, setFormData] = useState({
+    name: "",
+    category: "",
+    description: "",
+    price: "",
+    availability: "in-stock",
+    dietMeal: "Yes",
+    calories: "",
+    image: "",
+  });
 
-  // Debug categories when they change
-  useEffect(() => {
-    console.log("🔍 [ADD_ITEM_MODAL] Categories updated:", categories);
-    console.log("🔍 [ADD_ITEM_MODAL] Current itemCategory state:", itemCategory);
-    
-    // Check if the currently selected category is still valid
-    if (itemCategory && categories.length > 0) {
-      const categoryStillExists = categories.some((cat: any) => cat.name === itemCategory);
-      if (!categoryStillExists) {
-        console.log("🔍 [ADD_ITEM_MODAL] Selected category no longer exists, resetting selection");
-        setItemCategory("");
-      } else {
-        console.log("🔍 [ADD_ITEM_MODAL] Selected category still valid:", itemCategory);
-      }
-    }
-  }, [categories]);
+  const [menuStates, setMenuStates] = useState({
+    category: false,
+    availability: false,
+    diet: false,
+  });
 
-  // Debug itemCategory changes
-  useEffect(() => {
-    console.log("🔍 [ADD_ITEM_MODAL] itemCategory changed to:", itemCategory);
-  }, [itemCategory]);
+  const [categorySearch, setCategorySearch] = useState("");
 
-  // Debug modal visibility
-  useEffect(() => {
-    console.log("🔍 [ADD_ITEM_MODAL] Modal visibility changed to:", visible);
+  // Reset form when modal opens or populate for edit/view
+  React.useEffect(() => {
     if (visible) {
-      console.log("🔍 [ADD_ITEM_MODAL] Modal opened with categories:", categories);
-      console.log("🔍 [ADD_ITEM_MODAL] Current itemCategory state:", itemCategory);
-      
-      // Reset form fields but preserve category selection
-      console.log("🔍 [ADD_ITEM_MODAL] Resetting form fields (preserving category selection)");
-      setItemName("");
-      setItemDetails("");
-      setItemPrice("");
-      setItemAvailability("in-stock");
-      setDietMeal("Yes");
-      setCalories("");
-      setSelectedImage("");
-      // Note: We're NOT resetting itemCategory here to preserve the selection
-      
-      console.log("🔍 [ADD_ITEM_MODAL] After reset - itemCategory state:", itemCategory);
-    } else {
-      console.log("🔍 [ADD_ITEM_MODAL] Modal closed");
-      console.log("🔍 [ADD_ITEM_MODAL] Final itemCategory state before close:", itemCategory);
-      
-      // Don't reset itemCategory when modal closes - preserve it for next open
-      console.log("🔍 [ADD_ITEM_MODAL] Preserving itemCategory for next modal open:", itemCategory);
+      if ((isEditMode || isViewMode) && editItem) {
+        // Populate form with edit/view item data
+        setFormData({
+          name: editItem.name || "",
+          category: editItem.itemCategory || "",
+          description: editItem.description || "",
+          price: editItem.price?.toString() || "",
+          availability: editItem.availability || "in-stock",
+          dietMeal: editItem.isDietMeal ? "Yes" : "No",
+          calories: editItem.calories?.toString() || "",
+          image: editItem.image || "",
+        });
+      } else {
+        // Reset form for new item
+        setFormData({
+          name: "",
+          category: "",
+          description: "",
+          price: "",
+          availability: "in-stock",
+          dietMeal: "Yes",
+          calories: "",
+          image: "",
+        });
+      }
+      setMenuStates({ category: false, availability: false, diet: false });
+      setCategorySearch("");
     }
-  }, [visible]); // Remove categories and itemCategory from dependency array
+  }, [visible, isEditMode, isViewMode, editItem]);
 
-  // Use categories from API if available, otherwise fallback to defaults
-  const categoryOptions = categories.length > 0 
-    ? categories.map((cat: any) => cat.name)
-    : ["Veg", "Non-Veg", "Beverages", "Desserts", "Snacks"];
-  
-  // Debug category options
-  useEffect(() => {
-    console.log("🔍 [ADD_ITEM_MODAL] Category options generated:", categoryOptions);
-    console.log("🔍 [ADD_ITEM_MODAL] Source categories:", categories);
-  }, [categoryOptions, categories]);
-  
-  const availabilityOptions = ["in-stock", "out-of-stock", "limited"];
-  
-  // Display text for availability options
-  const getAvailabilityDisplayText = (value: string) => {
-    switch (value) {
-      case 'in-stock': return 'In Stock';
-      case 'out-of-stock': return 'Out of Stock';
-      case 'limited': return 'Limited';
-      default: return value;
-    }
-  };
-  const dietOptions = ["Yes", "No"];
-
-  // Default burger image (you can replace with your default image)
-  const defaultImage =
-    "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&h=300&fit=crop";
-
-  const requestPermissions = async () => {
+  // Permission handling
+  const requestPermissions = useCallback(async (): Promise<boolean> => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") {
       Alert.alert(
@@ -140,139 +154,342 @@ const AddItemModal = ({ visible, onDismiss, onSave, isLoading = false, categorie
       return false;
     }
     return true;
-  };
+  }, []);
 
-  const handleImageUpload = async () => {
+  const requestCameraPermission = useCallback(async (): Promise<boolean> => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("Permission needed", "Camera permission is required!");
+      return false;
+    }
+    return true;
+  }, []);
+
+  // Image picker handlers
+  const handleCameraCapture = useCallback(async () => {
+    const hasPermission = await requestCameraPermission();
+    if (!hasPermission) return;
+
+    const result = await ImagePicker.launchCameraAsync(IMAGE_PICKER_OPTIONS);
+    if (!result.canceled && result.assets[0]) {
+      setFormData(prev => ({ ...prev, image: result.assets[0].uri }));
+    }
+  }, [requestCameraPermission]);
+
+  const handleGalleryPick = useCallback(async () => {
     const hasPermission = await requestPermissions();
     if (!hasPermission) return;
 
+    const result = await ImagePicker.launchImageLibraryAsync(IMAGE_PICKER_OPTIONS);
+    if (!result.canceled && result.assets[0]) {
+      setFormData(prev => ({ ...prev, image: result.assets[0].uri }));
+    }
+  }, [requestPermissions]);
+
+  const handleImageUpload = useCallback(() => {
     Alert.alert("Upload Image", "Select image source", [
-      {
-        text: "Camera",
-        onPress: async () => {
-          const cameraPermission =
-            await ImagePicker.requestCameraPermissionsAsync();
-          if (cameraPermission.status !== "granted") {
-            Alert.alert("Permission needed", "Camera permission is required!");
-            return;
-          }
-
-          const result = await ImagePicker.launchCameraAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.Images,
-            allowsEditing: true,
-            aspect: [4, 3],
-            quality: 0.7,
-          });
-
-          if (!result.canceled && result.assets[0]) {
-            setSelectedImage(result.assets[0].uri);
-          }
-        },
-      },
-      {
-        text: "Gallery",
-        onPress: async () => {
-          const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.Images,
-            allowsEditing: true,
-            aspect: [4, 3],
-            quality: 0.7,
-          });
-
-          if (!result.canceled && result.assets[0]) {
-            setSelectedImage(result.assets[0].uri);
-          }
-        },
-      },
+      { text: "Camera", onPress: handleCameraCapture },
+      { text: "Gallery", onPress: handleGalleryPick },
       { text: "Cancel", style: "cancel" },
     ]);
-  };
+  }, [handleCameraCapture, handleGalleryPick]);
 
-  const handleSave = () => {
-    console.log("🔍 [ADD_ITEM_MODAL] handleSave called");
-    console.log("🔍 [ADD_ITEM_MODAL] Current form state:", {
-      itemName,
-      itemCategory,
-      itemDetails,
-      itemPrice,
-      itemAvailability,
-      dietMeal,
-      calories,
-      selectedImage
+  // Form handlers
+  const updateFormData = useCallback((field: keyof typeof formData, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  }, []);
+
+  const toggleMenu = useCallback((menu: keyof typeof menuStates) => {
+    setMenuStates(prev => ({ ...prev, [menu]: !prev[menu] }));
+  }, []);
+
+  const closeMenu = useCallback((menu: keyof typeof menuStates) => {
+    setMenuStates(prev => ({ ...prev, [menu]: false }));
+  }, []);
+
+  const resetForm = useCallback(() => {
+    setFormData({
+      name: "",
+      category: "",
+      description: "",
+      price: "",
+      availability: "in-stock",
+      dietMeal: "Yes",
+      calories: "",
+      image: "",
     });
-    console.log("🔍 [ADD_ITEM_MODAL] Available categories:", categories);
+  }, []);
 
-    if (!itemName || !itemPrice) {
-      Alert.alert("Error", "Please fill all required fields");
+  // Computed values
+  const categoryOptions = useMemo(() => 
+    categories.length > 0 
+      ? categories.map(cat => cat.name)
+      : ["Veg", "Non-Veg", "Beverages", "Desserts", "Snacks"],
+    [categories]
+  );
+
+  const filteredCategories = useMemo(() => 
+    categoryOptions.filter(category => 
+      category.toLowerCase().includes(categorySearch.toLowerCase())
+    ),
+    [categoryOptions, categorySearch]
+  );
+
+  const isFormValid = useMemo(() => {
+    return formData.name.trim() && 
+           formData.price.trim() && 
+           formData.category.trim() &&
+           categories.length > 0;
+  }, [formData, categories.length]);
+
+  const getAvailabilityDisplayText = useCallback((value: string) => {
+    const option = AVAILABILITY_OPTIONS.find(opt => opt.value === value);
+    return option ? option.label : value;
+  }, []);
+
+  const handleSave = useCallback(() => {
+    if (!isFormValid) {
+      Alert.alert("Error", "Please fill all required fields and ensure categories are available");
       return;
     }
-
-    if (!itemCategory || itemCategory.trim() === "") {
-      Alert.alert("Error", "Please select a category");
-      return;
-    }
-
-    if (categories.length === 0) {
-      Alert.alert("Error", "No categories available. Please create a category first.");
-      return;
-    }
-
-    // Debug category selection
-    console.log("🔍 [ADD_ITEM_MODAL] Category selection debug:", {
-      selectedCategory: itemCategory,
-      availableCategories: categories,
-      itemCategoryType: typeof itemCategory
-    });
 
     // Find the category object to get the ID
-    const selectedCategoryObj = categories.find((cat: any) => cat.name === itemCategory);
-    const categoryId = selectedCategoryObj ? selectedCategoryObj.id : itemCategory;
+    const selectedCategoryObj = categories.find(cat => cat.name === formData.category);
+    const categoryId = selectedCategoryObj ? selectedCategoryObj.id : formData.category;
 
-    console.log("🔍 [ADD_ITEM_MODAL] Category mapping:", {
-      selectedCategoryObj,
-      categoryId,
-      categoryIdType: typeof categoryId
-    });
-
-    if (!categoryId || categoryId === 'undefined') {
+    if (!categoryId) {
       Alert.alert("Error", "Please select a valid category");
       return;
     }
 
-    const newItem = {
-      id: Date.now().toString(),
-      name: itemName,
-      category: categoryId, // Use category ID for API
-      description: itemDetails,
-      itemCategory: itemCategory, // Keep the name for display
-      price: parseFloat(itemPrice),
-      availability: itemAvailability,
-      isDietMeal: dietMeal === "Yes",
-      calories: parseInt(calories) || 0,
-      image: selectedImage || defaultImage,
-      restaurant: "Your Restaurant",
-      isVegetarian: itemCategory.toLowerCase() === "veg",
+    const itemData: ItemData = {
+      id: isEditMode && editItem ? editItem.id : Date.now().toString(),
+      name: formData.name.trim(),
+      category: categoryId,
+      description: formData.description.trim(),
+      itemCategory: formData.category,
+      price: parseFloat(formData.price),
+      availability: formData.availability,
+      isDietMeal: formData.dietMeal === "Yes",
+      calories: parseInt(formData.calories) || 0,
+      image: formData.image || DEFAULT_IMAGE,
+      restaurant: isEditMode && editItem ? editItem.restaurant : "Your Restaurant",
+      isVegetarian: formData.category.toLowerCase() === "veg",
     };
 
-    console.log("🚀 [ADD_ITEM_MODAL] Sending item data:", newItem);
-
-    // Pass data to parent first
-    onSave(newItem);
-
-    // Reset form after data is passed to parent
-    console.log("🔍 [ADD_ITEM_MODAL] Resetting form after save");
-    setItemName("");
-    setItemCategory("");
-    setItemDetails("");
-    setItemPrice("");
-    setItemAvailability("in-stock");
-    setDietMeal("Yes");
-    setCalories("");
-    setSelectedImage("");
+    if (isEditMode && onUpdate) {
+      onUpdate(itemData);
+    } else {
+      onSave(itemData);
+    }
     
-    // Close modal last
+    resetForm();
     onDismiss();
-  };
+  }, [formData, isFormValid, categories, onSave, onUpdate, resetForm, onDismiss, isEditMode, editItem]);
+
+  const handleCancel = useCallback(() => {
+    resetForm();
+    onDismiss();
+  }, [resetForm, onDismiss]);
+
+  // Memoized components
+  const ImageUploadSection = useMemo(() => (
+    <TouchableOpacity
+      onPress={isViewMode ? undefined : handleImageUpload}
+      style={styles.imageUploadContainer}
+      disabled={isViewMode}
+    >
+      {formData.image ? (
+        <View style={styles.imageContainer}>
+          <Image
+            source={{ uri: formData.image }}
+            style={styles.uploadedImage}
+          />
+          <View style={styles.imageOverlay}>
+            <IconButton
+              icon="camera"
+              mode="contained"
+              size={20}
+              style={styles.cameraIcon}
+              iconColor="#fff"
+              onPress={handleImageUpload}
+            />
+          </View>
+        </View>
+      ) : (
+        <View style={styles.uploadPlaceholder}>
+          <Image
+            source={{ uri: DEFAULT_IMAGE }}
+            style={styles.defaultImage}
+          />
+          {!isViewMode && (
+            <View style={styles.uploadOverlay}>
+              <View style={styles.uploadButton}>
+                <Text style={styles.uploadText}>UPLOAD IMAGE</Text>
+                <IconButton
+                  icon="camera"
+                  mode="contained"
+                  size={18}
+                  style={styles.cameraIconLarge}
+                  iconColor="#fff"
+                />
+              </View>
+            </View>
+          )}
+        </View>
+      )}
+    </TouchableOpacity>
+  ), [formData.image, handleImageUpload]);
+
+  const CategoryMenu = useMemo(() => (
+    <Menu
+      visible={menuStates.category}
+      onDismiss={() => {
+        closeMenu("category");
+        setCategorySearch("");
+      }}
+      contentStyle={{ marginTop: -100 }}
+      anchor={
+        <TouchableOpacity onPress={() => !isViewMode && toggleMenu("category")}>
+          <TextInput
+            mode="outlined"
+            value={formData.category || ""}
+            editable={false}
+            style={styles.modalInput}
+            contentStyle={{ borderRadius: 35 }}
+            outlineColor="#e0e0e0"
+            activeOutlineColor="#6F32AB"
+            right={<TextInput.Icon icon="chevron-down" />}
+            textColor={formData.category ? "#333" : "#999"}
+          />
+        </TouchableOpacity>
+      }
+    >
+      <View style={{ padding: 8, maxHeight: 200 }}>
+        <TextInput
+          mode="outlined"
+          value={categorySearch}
+          onChangeText={setCategorySearch}
+          placeholder="Search categories..."
+          style={{ marginBottom: 8, backgroundColor: '#FDF7F1' }}
+          outlineColor="#e0e0e0"
+          activeOutlineColor="#6F32AB"
+          textColor="#333"
+        />
+        <ScrollView style={{ maxHeight: 150 }}>
+          {filteredCategories.length > 0 ? (
+            filteredCategories.map((option: string) => (
+              <TouchableOpacity
+                key={option}
+                onPress={() => {
+                  updateFormData("category", option);
+                  closeMenu("category");
+                  setCategorySearch("");
+                }}
+                style={{ 
+                  padding: 12, 
+                  borderBottomWidth: 1, 
+                  borderBottomColor: '#e0e0e0' 
+                }}
+              >
+                <Text style={{ color: '#333', fontSize: 16 }}>{option}</Text>
+              </TouchableOpacity>
+            ))
+          ) : (
+            <View style={{ padding: 12 }}>
+              <Text style={{ color: '#999', fontSize: 16 }}>No categories found</Text>
+            </View>
+          )}
+        </ScrollView>
+      </View>
+    </Menu>
+  ), [menuStates.category, formData.category, filteredCategories, categorySearch, toggleMenu, closeMenu, updateFormData]);
+
+  const AvailabilityMenu = useMemo(() => (
+    <Menu
+      visible={menuStates.availability}
+      onDismiss={() => closeMenu("availability")}
+      contentStyle={{ marginTop: -100 }}
+      anchor={
+        <TouchableOpacity onPress={() => !isViewMode && toggleMenu("availability")}>
+          <TextInput
+            mode="outlined"
+            value={getAvailabilityDisplayText(formData.availability)}
+            editable={false}
+            style={styles.modalInput}
+            contentStyle={{ borderRadius: 35 }}
+            right={<TextInput.Icon icon="chevron-down" />}
+            outlineColor="#e0e0e0"
+            activeOutlineColor="#6F32AB"
+            textColor="#333"
+          />
+        </TouchableOpacity>
+      }
+    >
+      {AVAILABILITY_OPTIONS.map((option) => (
+        <Menu.Item
+          key={option.value}
+          onPress={() => {
+            updateFormData("availability", option.value);
+            closeMenu("availability");
+          }}
+          title={option.label}
+        />
+      ))}
+    </Menu>
+  ), [menuStates.availability, formData.availability, getAvailabilityDisplayText, toggleMenu, closeMenu, updateFormData]);
+
+  const DietMenu = useMemo(() => (
+    <Menu
+      visible={menuStates.diet}
+      onDismiss={() => closeMenu("diet")}
+      contentStyle={{ marginTop: -100 }}
+      anchor={
+        <TouchableOpacity onPress={() => !isViewMode && toggleMenu("diet")}>
+          <TextInput
+            mode="outlined"
+            value={formData.dietMeal}
+            editable={false}
+            style={styles.modalInput}
+            contentStyle={{ borderRadius: 35 }}
+            right={<TextInput.Icon icon="chevron-down" />}
+            outlineColor="#e0e0e0"
+            activeOutlineColor="#6F32AB"
+            textColor="#333"
+          />
+        </TouchableOpacity>
+      }
+    >
+      {DIET_OPTIONS.map((option) => (
+        <Menu.Item
+          key={option}
+          onPress={() => {
+            updateFormData("dietMeal", option);
+            closeMenu("diet");
+          }}
+          title={option}
+        />
+      ))}
+    </Menu>
+  ), [menuStates.diet, formData.dietMeal, toggleMenu, closeMenu, updateFormData]);
+
+  const ActionButtons = useMemo(() => (
+    !isViewMode ? (
+      <View style={styles.modalButtons}>
+        <Button
+          mode="contained"
+          onPress={handleSave}
+          style={isFormValid ? styles.saveButtonActive : styles.saveButton}
+          buttonColor={isFormValid ? "#6F32AB" : "#ff6b35"}
+          textColor="#ffffff"
+          loading={isLoading}
+          disabled={isLoading || !isFormValid}
+        >
+{isLoading ? (isEditMode ? "Updating..." : "Creating...") : (isEditMode ? "Update Details" : "Save Details")}
+        </Button>
+      </View>
+    ) : null
+  ), [handleSave, isLoading, isFormValid, isViewMode]);
 
   return (
     <Portal>
@@ -281,248 +498,113 @@ const AddItemModal = ({ visible, onDismiss, onSave, isLoading = false, categorie
         onDismiss={onDismiss}
         contentContainerStyle={[styles.modalContainer, { maxHeight: "100%" }]}
       >
-        <ScrollView showsVerticalScrollIndicator={false}>
-          <TouchableOpacity
-            onPress={handleImageUpload}
-            style={styles.imageUploadContainer}
-          >
-            {selectedImage ? (
-              <View style={styles.imageContainer}>
-                <Image
-                  source={{ uri: selectedImage }}
-                  style={styles.uploadedImage}
-                />
-                <View style={styles.imageOverlay}>
-                  <IconButton
-                    icon="camera"
-                    mode="contained"
-                    size={20}
-                    style={styles.cameraIcon}
-                    iconColor="#fff"
-                    onPress={handleImageUpload}
-                  />
-                </View>
-              </View>
-            ) : (
-              <View style={styles.uploadPlaceholder}>
-                <Image
-                  source={{ uri: defaultImage }}
-                  style={styles.defaultImage}
-                />
-                <View style={styles.uploadOverlay}>
-                  <IconButton
-                    icon="camera"
-                    mode="contained"
-                    size={24}
-                    style={styles.cameraIconLarge}
-                    iconColor="#fff"
-                  />
-                  <Text style={styles.uploadText}>UPLOAD IMAGE</Text>
-                </View>
-              </View>
-            )}
-          </TouchableOpacity>
-          <View style={styles.rowContainer}>
-            <TextInput
-              label="Item Name"
-              mode="outlined"
-              value={itemName}
-              onChangeText={setItemName}
-              style={styles.modalInput}
-              outlineColor="#e0e0e0"
-              activeOutlineColor="#ff6b35"
-              textColor="#333"
-            />
-
-            {categories.length === 0 && (
-              <Text style={{ color: '#ff6b35', fontSize: 12, marginBottom: 8 }}>
-                ⚠️ No categories available. Please create a category first.
-              </Text>
-            )}
-
-         
-
-            <Menu
-              visible={showCategoryMenu}
-              onDismiss={() => setShowCategoryMenu(false)}
-              anchor={
-                <TouchableOpacity onPress={() => setShowCategoryMenu(true)}>
-                  <TextInput
-                    label="Item Category *"
-                    mode="outlined"
-                    value={itemCategory || "Select Category"}
-                    editable={false}
-                    style={styles.modalInput}
-                    outlineColor="#e0e0e0"
-                    activeOutlineColor="#ff6b35"
-                    right={<TextInput.Icon icon="chevron-down" />}
-                    textColor={itemCategory ? "#333" : "#999"}
-                  />
-                </TouchableOpacity>
-              }
+        <ScrollView showsVerticalScrollIndicator={false} style={{ padding: 12 }}>
+          <View style={{ position: 'relative' }}>
+            {ImageUploadSection}
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={handleCancel}
             >
-              {categoryOptions.length > 0 ? (
-                categoryOptions.map((option: string) => (
-                  <Menu.Item
-                    key={option}
-                    onPress={() => {
-                      console.log("🔍 [ADD_ITEM_MODAL] Category selected from menu:", option);
-                      console.log("🔍 [ADD_ITEM_MODAL] Available categories:", categories);
-                      console.log("🔍 [ADD_ITEM_MODAL] Finding category object for:", option);
-                      
-                      const selectedCategoryObj = categories.find((cat: any) => cat.name === option);
-                      console.log("🔍 [ADD_ITEM_MODAL] Found category object:", selectedCategoryObj);
-                      
-                      setItemCategory(option);
-                      setShowCategoryMenu(false);
-                      
-                      console.log("🔍 [ADD_ITEM_MODAL] itemCategory set to:", option);
-                    }}
-                    title={option}
-                  />
-                ))
-              ) : (
-                <Menu.Item
-                  title="No categories available"
-                  disabled
-                />
+              <Ionicons name="arrow-back" size={18} color="#ffffff" />
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.rowContainer}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.inputLabel}>ITEM NAME *</Text>
+              <TextInput
+                mode="outlined"
+                value={formData.name}
+                onChangeText={(value) => updateFormData("name", value)}
+                style={styles.modalInput}
+                contentStyle={{ borderRadius: 35 }}
+                outlineColor="#e0e0e0"
+                activeOutlineColor="#6F32AB"
+                textColor="#333"
+                editable={!isViewMode}
+              />
+            </View>
+
+            <View style={{ flex: 1 }}>
+              <Text style={styles.inputLabel}>ITEM CATEGORY *</Text>
+              {categories.length === 0 && (
+                <Text style={{ color: '#ff6b35', fontSize: 12, marginBottom: 8 }}>
+                  ⚠️ No categories available
+                </Text>
               )}
-            </Menu>
+              {CategoryMenu}
+            </View>
           </View>
 
-          {/* Item Details */}
-          <TextInput
-            label="Item Details"
-            mode="outlined"
-            value={itemDetails}
-            onChangeText={setItemDetails}
-            style={styles.modalInput}
-            multiline
-            numberOfLines={3}
-            outlineColor="#e0e0e0"
-            activeOutlineColor="#ff6b35"
-            placeholder="Don't eat too much"
-            textColor="#333"
-          />
-
-          {/* Price and Availability Row */}
-          <View style={styles.rowContainer}>
+          <View style={styles.fullWidthInput}>
+            <Text style={styles.inputLabel}>ITEM DETAILS</Text>
             <TextInput
-              label="Item Price *"
               mode="outlined"
-              value={itemPrice}
-              onChangeText={setItemPrice}
+              value={formData.description}
+              onChangeText={(value) => updateFormData("description", value)}
               style={styles.modalInput}
-              keyboardType="numeric"
-              left={<TextInput.Icon icon="currency-inr" />}
+              contentStyle={{ borderRadius: 35 }}
               outlineColor="#e0e0e0"
-              activeOutlineColor="#ff6b35"
+              activeOutlineColor="#6F32AB"
               textColor="#333"
-            />
-
-            <Menu
-              visible={showAvailabilityMenu}
-              onDismiss={() => setShowAvailabilityMenu(false)}
-              anchor={
-                <TouchableOpacity onPress={() => setShowAvailabilityMenu(true)}>
-                  <TextInput
-                    label="Item Availability"
-                    mode="outlined"
-                    value={getAvailabilityDisplayText(itemAvailability)}
-                    editable={false}
-                    style={styles.modalInput}
-                    right={<TextInput.Icon icon="chevron-down" />}
-                    outlineColor="#e0e0e0"
-                    activeOutlineColor="#ff6b35"
-                    textColor="#333"
-                  />
-                </TouchableOpacity>
-              }
-            >
-              {availabilityOptions.map((option) => (
-                <Menu.Item
-                  key={option}
-                  onPress={() => {
-                    setItemAvailability(option);
-                    setShowAvailabilityMenu(false);
-                  }}
-                  title={getAvailabilityDisplayText(option)}
-                />
-              ))}
-            </Menu>
-          </View>
-
-          {/* Diet Meal and Calories Row */}
-          <View style={styles.rowContainer}>
-            <Menu
-              visible={showDietMenu}
-              onDismiss={() => setShowDietMenu(false)}
-              anchor={
-                <TouchableOpacity onPress={() => setShowDietMenu(true)}>
-                  <TextInput
-                    label="Diet Meal"
-                    mode="outlined"
-                    value={dietMeal}
-                    editable={false}
-                    style={styles.modalInput}
-                    right={<TextInput.Icon icon="chevron-down" />}
-                    outlineColor="#e0e0e0"
-                    activeOutlineColor="#ff6b35"
-                    textColor="#333"
-                  />
-                </TouchableOpacity>
-              }
-            >
-              {dietOptions.map((option) => (
-                <Menu.Item
-                  key={option}
-                  onPress={() => {
-                    setDietMeal(option);
-                    setShowDietMenu(false);
-                  }}
-                  title={option}
-                />
-              ))}
-            </Menu>
-
-            <TextInput
-              label="Calories"
-              mode="outlined"
-              value={calories}
-              onChangeText={setCalories}
-              style={styles.modalInput}
-              keyboardType="numeric"
-              outlineColor="#e0e0e0"
-              activeOutlineColor="#ff6b35"
-              textColor="#333"
+              editable={!isViewMode}
             />
           </View>
 
-          <View style={styles.modalButtons}>
-            <Button
-              mode="outlined"
-              onPress={onDismiss}
-              style={styles.cancelButton}
-              textColor="#ff6b35"
-            >
-              Cancel
-            </Button>
-            <Button
-              mode="contained"
-              onPress={handleSave}
-              style={styles.saveButton}
-              buttonColor="#ff6b35"
-              textColor="#ffffff"
-              loading={isLoading}
-              disabled={isLoading || categories.length === 0 || !itemCategory || itemCategory.trim() === ""}
-            >
-              {isLoading ? "Creating..." : "Save Details"}
-            </Button>
+          <View style={styles.rowContainer}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.inputLabel}>ITEM PRICE *</Text>
+              <TextInput
+                mode="outlined"
+                value={formData.price}
+                onChangeText={(value) => updateFormData("price", value)}
+                style={styles.modalInput}
+                contentStyle={{ borderRadius: 35 }}
+                keyboardType="numeric"
+                left={<TextInput.Icon icon="currency-inr" />}
+                outlineColor="#e0e0e0"
+                activeOutlineColor="#6F32AB"
+                textColor="#333"
+                editable={!isViewMode}
+              />
+            </View>
+
+            <View style={{ flex: 1 }}>
+              <Text style={styles.inputLabel}>ITEM AVAILABILITY</Text>
+              {AvailabilityMenu}
+            </View>
           </View>
+
+          <View style={styles.rowContainer}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.inputLabel}>DIET MEAL</Text>
+              {DietMenu}
+            </View>
+
+            <View style={{ flex: 1 }}>
+              <Text style={styles.inputLabel}>CAL</Text>
+              <TextInput
+                mode="outlined"
+                value={formData.calories}
+                onChangeText={(value) => updateFormData("calories", value)}
+                style={styles.modalInput}
+                contentStyle={{ borderRadius: 35 }}
+                keyboardType="numeric"
+                outlineColor="#e0e0e0"
+                activeOutlineColor="#6F32AB"
+                textColor="#333"
+                editable={!isViewMode}
+              />
+            </View>
+          </View>
+
+          {ActionButtons}
         </ScrollView>
       </Modal>
     </Portal>
   );
-};
+});
+
+AddItemModal.displayName = "AddItemModal";
 
 export default AddItemModal;

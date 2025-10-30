@@ -5,6 +5,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   View,
+  TextInput,
 } from "react-native";
 import {
   Button,
@@ -13,10 +14,10 @@ import {
   Icon,
   Modal,
   Portal,
-  Searchbar,
   Text,
   ToggleButton,
 } from "react-native-paper";
+import { MaterialIcons } from "@expo/vector-icons";
 
 const deliveryGuys = Array.from({ length: 10 }).map((_, index) => ({
   id: index + 1,
@@ -113,7 +114,7 @@ const DeliveryGuyList = ({ completedOrders = [] }: any) => {
         <Card style={styles.ordersSummaryCard}>
           <Card.Content>
             <View style={styles.ordersSummaryHeader}>
-              <Icon source="package-variant" size={24} color="#4CAF50" />
+              <Icon source="package-variant" size={24} color="#6F32AB" />
               <Text style={styles.ordersSummaryTitle}>
                 {completedOrders.length} Order
                 {completedOrders.length > 1 ? "s" : ""} Ready for Pickup
@@ -141,14 +142,18 @@ const DeliveryGuyList = ({ completedOrders = [] }: any) => {
 
       {/* Search Header */}
       <View style={styles.searchContainer}>
-        <Searchbar
+        <MaterialIcons 
+          name="search" 
+          size={20} 
+          color="#6F32AB" 
+          style={styles.searchIcon}
+        />
+        <TextInput
           placeholder="Search with name or ids"
-          onChangeText={handleSearch}
+          placeholderTextColor="#434140"
           value={searchQuery}
+          onChangeText={handleSearch}
           style={styles.searchBar}
-          iconColor="#ff6b35"
-          placeholderTextColor="#333"
-          inputStyle={{ color: "#333" }}
         />
       </View>
 
@@ -163,7 +168,7 @@ const DeliveryGuyList = ({ completedOrders = [] }: any) => {
             styles.favoriteToggle,
             showFavoritesOnly && styles.favoriteToggleActive,
           ]}
-          iconColor={showFavoritesOnly ? "#fff" : "#ff6b35"}
+          iconColor={showFavoritesOnly ? "#fff" : "#6F32AB"}
         />
         <Text style={styles.filterText}>
           {showFavoritesOnly
@@ -216,7 +221,7 @@ const DeliveryGuyList = ({ completedOrders = [] }: any) => {
                           : "heart-outline"
                       }
                       color={
-                        favoriteDrivers.includes(item.id) ? "#ff6b35" : "#CCC"
+                        favoriteDrivers.includes(item.id) ? "#6F32AB" : "#CCC"
                       }
                       size={20}
                     />
@@ -304,7 +309,7 @@ const DeliveryGuyList = ({ completedOrders = [] }: any) => {
               </Text>
               {selectedDriver &&
                 favoriteDrivers.includes(selectedDriver.id) && (
-                  <Icon source="heart" color="#ff6b35" size={24} />
+                  <Icon source="heart" color="#6F32AB" size={24} />
                 )}
             </View>
 
@@ -395,15 +400,19 @@ export default DeliveryGuyList;
 const styles = StyleSheet.create({
   container: {
     padding: 16,
-    backgroundColor: "#f8f9fa",
+    backgroundColor: "#FDF7F1",
     flex: 1,
     width: "100%",
   },
   ordersSummaryCard: {
     marginBottom: 16,
-    borderRadius: 10,
-    elevation: 2,
-    backgroundColor: "white",
+    borderRadius: 16,
+    elevation: 4,
+    backgroundColor: "#FDF7F1",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
   },
   ordersSummaryHeader: {
     flexDirection: "row",
@@ -412,9 +421,9 @@ const styles = StyleSheet.create({
   },
   ordersSummaryTitle: {
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: "bold",
     marginLeft: 8,
-    color: "#333",
+    color: "#434140",
   },
   ordersScroll: {
     flexDirection: "row",
@@ -429,15 +438,30 @@ const styles = StyleSheet.create({
   },
   searchContainer: {
     marginBottom: 10,
+    position: 'relative',
   },
   searchBar: {
-    backgroundColor: "#ffffff",
-    borderRadius: 12,
-    elevation: 2,
-    shadowColor: "#000",
+    backgroundColor: '#FDF7F1',
+    borderRadius: 25,
+    height: 40,
+    paddingLeft: 50,
+    paddingRight: 20,
+    paddingVertical: 10,
+    fontSize: 14,
+    color: '#434140',
+    elevation: 4,
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+  },
+  searchIcon: {
+    position: 'absolute',
+    left: 15,
+    top: 10,
+    zIndex: 1,
   },
   filterContainer: {
     flexDirection: "row",
@@ -447,42 +471,48 @@ const styles = StyleSheet.create({
   },
   favoriteToggle: {
     marginRight: 12,
-    backgroundColor: "#fff",
+    backgroundColor: "#FDF7F1",
     borderWidth: 1,
-    borderColor: "#ff6b35",
+    borderColor: "#6F32AB",
     borderRadius: 8,
   },
   favoriteToggleActive: {
-    backgroundColor: "#ff6b35",
+    backgroundColor: "#6F32AB",
   },
   filterText: {
     flex: 1,
     fontSize: 14,
-    color: "#666",
+    color: "#434140",
+    fontWeight: "500",
   },
   favoriteCountChip: {
-    backgroundColor: "#fff3cd",
-    borderColor: "#ff6b35",
+    backgroundColor: "#F0E6FF",
+    borderColor: "#6F32AB",
     borderWidth: 1,
   },
   favoriteCountText: {
-    color: "#ff6b35",
+    color: "#6F32AB",
     fontSize: 12,
+    fontWeight: "bold",
   },
   card: {
-    marginBottom: 10,
-    borderRadius: 10,
-    elevation: 2,
-    backgroundColor: "white",
+    marginBottom: 15,
+    borderRadius: 16,
+    elevation: 4,
+    backgroundColor: "#FDF7F1",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
   },
   unavailableCard: {
     opacity: 0.7,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: "#F5F5F5",
   },
   favoriteCard: {
-    borderColor: "#ff6b35",
-    borderWidth: 1,
-    elevation: 3,
+    borderColor: "#6F32AB",
+    borderWidth: 2,
+    elevation: 6,
   },
   cardContent: {
     flexDirection: "row",
@@ -496,13 +526,16 @@ const styles = StyleSheet.create({
   index: {
     marginRight: 6,
     fontWeight: "bold",
-    color: "#333",
+    color: "#434140",
   },
   name: {
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: "bold",
     flex: 1,
-    color: "#333",
+    color: "#434140",
+    maxWidth: 200,
+    numberOfLines: 1,
+    ellipsizeMode: "tail",
   },
   unavailableText: {
     color: "#999",
@@ -513,7 +546,8 @@ const styles = StyleSheet.create({
   },
   code: {
     fontSize: 14,
-    color: "#666",
+    color: "#434140",
+    fontWeight: "500",
   },
   statusRow: {
     marginTop: 8,
@@ -529,34 +563,37 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   favoriteLabel: {
-    backgroundColor: "#fff3cd",
-    borderColor: "#ff6b35",
+    backgroundColor: "#F0E6FF",
+    borderColor: "#6F32AB",
     borderWidth: 1,
   },
   favoriteLabelText: {
-    color: "#ff6b35",
+    color: "#6F32AB",
     fontSize: 10,
+    fontWeight: "bold",
   },
   contactSection: {
     alignItems: "flex-end",
   },
   phone: {
     fontSize: 12,
-    color: "#333",
+    color: "#434140",
+    fontWeight: "500",
   },
   email: {
     fontSize: 12,
-    color: "#999",
+    color: "#434140",
     marginBottom: 6,
+    fontWeight: "500",
   },
   assignBtn: {
-    backgroundColor: "#FA4A0C",
-    borderRadius: 6,
+    backgroundColor: "#6F32AB",
+    borderRadius: 12,
     paddingVertical: 2,
     paddingHorizontal: 12,
   },
   favoriteAssignBtn: {
-    backgroundColor: "#ff6b35",
+    backgroundColor: "#6F32AB",
     elevation: 2,
   },
   disabledBtn: {
@@ -569,12 +606,13 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: "#999",
+    color: "#434140",
     marginTop: 12,
     textAlign: "center",
+    fontWeight: "bold",
   },
   modalContainer: {
-    backgroundColor: "white",
+    backgroundColor: "#FDF7F1",
     margin: 20,
     borderRadius: 16,
     padding: 0,
@@ -593,28 +631,29 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 18,
     fontWeight: "bold",
-    color: "#333",
+    color: "#434140",
   },
   driverInfo: {
-    backgroundColor: "#f8f9fa",
+    backgroundColor: "#F0E6FF",
     padding: 12,
-    borderRadius: 8,
+    borderRadius: 12,
     marginBottom: 16,
   },
   driverDetail: {
     fontSize: 14,
-    color: "#666",
+    color: "#434140",
     marginBottom: 4,
+    fontWeight: "500",
   },
   favoriteDetail: {
-    color: "#ff6b35",
-    fontWeight: "500",
+    color: "#6F32AB",
+    fontWeight: "bold",
   },
   selectOrdersTitle: {
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: "bold",
     marginBottom: 12,
-    color: "#333",
+    color: "#434140",
   },
   ordersListModal: {
     maxHeight: 200,
@@ -625,32 +664,33 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     padding: 12,
-    borderRadius: 8,
+    borderRadius: 12,
     marginBottom: 8,
-    backgroundColor: "#f8f9fa",
+    backgroundColor: "#F0E6FF",
   },
   selectedOrderItem: {
     backgroundColor: "#E8F5E9",
-    borderColor: "#4CAF50",
-    borderWidth: 1,
+    borderColor: "#6F32AB",
+    borderWidth: 2,
   },
   orderItemContent: {
     flex: 1,
   },
   orderItemId: {
     fontSize: 14,
-    fontWeight: "600",
-    color: "#333",
+    fontWeight: "bold",
+    color: "#434140",
   },
   orderItemCustomer: {
     fontSize: 12,
-    color: "#666",
+    color: "#434140",
     marginTop: 2,
+    fontWeight: "500",
   },
   orderItemTotal: {
     fontSize: 12,
-    color: "#4CAF50",
-    fontWeight: "500",
+    color: "#6F32AB",
+    fontWeight: "bold",
     marginTop: 2,
   },
   modalActions: {
@@ -660,10 +700,10 @@ const styles = StyleSheet.create({
   },
   cancelBtn: {
     flex: 1,
-    borderColor: "#CCC",
+    borderColor: "#6F32AB",
   },
   confirmBtn: {
     flex: 1,
-    backgroundColor: "#4CAF50",
+    backgroundColor: "#6F32AB",
   },
 });

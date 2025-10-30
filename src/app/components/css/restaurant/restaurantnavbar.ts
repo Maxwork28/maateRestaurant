@@ -2,7 +2,7 @@ import { Platform, StyleSheet } from "react-native";
 
 export const styles = StyleSheet.create({
   safeArea: {
-    backgroundColor: "#fff",
+    backgroundColor: "#FDF7F1",
     paddingTop: Platform.OS === "android" ? 30 : 0,
     flex: 1,
   },
@@ -12,14 +12,14 @@ export const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingVertical: 10,
-    backgroundColor: "#fff",
-    borderBottomWidth: 0.5,
-    borderBottomColor: "#ddd",
+    backgroundColor: "#FDF7F1",
+    borderBottomWidth: 0,
+    borderBottomColor: "transparent",
   },
   logoText: {
     fontSize: 22,
     fontWeight: "bold",
-    color: "#FA4A0C",
+    color: "#6F32AB",
     letterSpacing: 1,
   },
   goOnlineBtn: {
@@ -45,7 +45,7 @@ export const styles = StyleSheet.create({
     marginRight: 10,
   },
   avatarFallback: {
-    backgroundColor: "#FA4A0C",
+    backgroundColor: "#6F32AB",
     justifyContent: "center",
     alignItems: "center",
   },
@@ -55,25 +55,27 @@ export const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   drawerContainer: {
-    backgroundColor: "#fff",
+    backgroundColor: "#FDF7F1",
     width: "100%",
     paddingVertical: 12,
     paddingHorizontal: 16,
-    borderBottomColor: "#ddd",
-    borderBottomWidth: 1,
-    elevation: 2,
+    borderBottomColor: "transparent",
+    borderBottomWidth: 0,
+    elevation: 0,
+    maxHeight: 400,
   },
   menuItem: {
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: 12,
-    borderBottomWidth: 0.5,
-    borderBottomColor: "#eee",
+    borderBottomWidth: 0,
+    borderBottomColor: "transparent",
   },
   menuLabel: {
     fontSize: 16,
     marginLeft: 10,
-    color: "#333",
+    color: "#434140",
+    fontWeight: "500",
   },
   childrenWrapper: {
     flex: 1,

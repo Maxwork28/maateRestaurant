@@ -1,4 +1,4 @@
-import { CITIES, PIN_CODES, STATES } from "@/constant/restaurant/country";
+// Removed CITIES, PIN_CODES, STATES imports as we're using text inputs now
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
 import React, { useState, useEffect } from "react";
@@ -7,8 +7,6 @@ import {
   Button,
   Divider,
   IconButton,
-  Menu,
-  Surface,
   Text,
   TextInput,
 } from "react-native-paper";
@@ -176,10 +174,7 @@ const BankDetailsSection: React.FC<BankDetailsSectionProps> = ({ onDataChange, o
   const [selectedImage, setSelectedImage] = useState<DocumentAsset | null>(null);
   const [imageModalVisible, setImageModalVisible] = useState(false);
 
-  // Dropdown menu states
-  const [cityMenuVisible, setCityMenuVisible] = useState<boolean>(false);
-  const [stateMenuVisible, setStateMenuVisible] = useState<boolean>(false);
-  const [pinCodeMenuVisible, setPinCodeMenuVisible] = useState<boolean>(false);
+  // Menu states removed as we're using text inputs now
 
   // Function to notify parent of document changes
   const notifyDocumentsChange = () => {
@@ -202,6 +197,81 @@ const BankDetailsSection: React.FC<BankDetailsSectionProps> = ({ onDataChange, o
     };
     setBankFormData(updatedData);
     onDataChange?.(updatedData);
+
+    // Auto-fill city and state when pin code is entered
+    if (field === "pinCode" && value.length === 6) {
+      handleBankPinCodeLookup(value);
+    }
+  };
+
+  const handleBankPinCodeLookup = async (pinCode: string): Promise<void> => {
+    try {
+      console.log("🔍 [BANK_DETAILS] Looking up pin code:", pinCode);
+      
+      // Try Postal PIN Code API first (official and reliable)
+      const response = await fetch(`https://api.postalpincode.in/pincode/${pinCode}`);
+      console.log("📡 [BANK_DETAILS] Postal PIN Code API response status:", response.status);
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log("✅ [BANK_DETAILS] Postal PIN Code API response:", data);
+        
+        // Handle array response format
+        const responseData = Array.isArray(data) ? data[0] : data;
+        console.log("📋 [BANK_DETAILS] Processed response data:", responseData);
+        
+        if (responseData.Status === "Success" && responseData.PostOffice && responseData.PostOffice.length > 0) {
+          const postOffice = responseData.PostOffice[0]; // Use first post office data
+          const updatedData = {
+            ...bankFormData,
+            city: postOffice.District || postOffice.Circle,
+            state: postOffice.State,
+          };
+          setBankFormData(updatedData);
+          onDataChange?.(updatedData);
+          console.log("📍 [BANK_DETAILS] Auto-filled city and state:", { 
+            city: postOffice.District || postOffice.Circle, 
+            state: postOffice.State 
+          });
+        } else {
+          console.log("⚠️ [BANK_DETAILS] Postal PIN Code API response missing data or error:", responseData.Message);
+          await tryBankAlternativePinCodeAPI(pinCode);
+        }
+      } else {
+        console.log("⚠️ [BANK_DETAILS] Postal PIN Code API failed with status:", response.status);
+        // Fallback to alternative API
+        await tryBankAlternativePinCodeAPI(pinCode);
+      }
+    } catch (error) {
+      console.log("❌ [BANK_DETAILS] Postal PIN Code API error:", error);
+      // Try alternative API
+      await tryBankAlternativePinCodeAPI(pinCode);
+    }
+  };
+
+  const tryBankAlternativePinCodeAPI = async (pinCode: string): Promise<void> => {
+    try {
+      console.log("🔄 [BANK_DETAILS] Trying alternative pin code API...");
+      const response = await fetch(`https://indianpincodes.co.in/api/pincode/${pinCode}`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log("✅ [BANK_DETAILS] Alternative API successful:", data);
+        
+        if (data.state && data.city) {
+          const updatedData = {
+            ...bankFormData,
+            city: data.city,
+            state: data.state,
+          };
+          setBankFormData(updatedData);
+          onDataChange?.(updatedData);
+          console.log("📍 [BANK_DETAILS] Auto-filled from alternative API:", { city: data.city, state: data.state });
+        }
+      }
+    } catch (error) {
+      console.log("❌ [BANK_DETAILS] Alternative pin code API also failed:", error);
+    }
   };
 
   const handleFocus = (fieldName: string): void => {
@@ -234,14 +304,7 @@ const BankDetailsSection: React.FC<BankDetailsSectionProps> = ({ onDataChange, o
     setImageModalVisible(false);
   };
 
-  const handleMenuItemPress = (
-    field: keyof BankFormData,
-    value: string,
-    setMenuVisible: (visible: boolean) => void
-  ): void => {
-    handleBankInputChange(field, value);
-    setMenuVisible(false);
-  };
+  // handleMenuItemPress function removed as we're using text inputs now
 
   const uploadQRImage = (): void => {
     Alert.alert(
@@ -381,33 +444,28 @@ const BankDetailsSection: React.FC<BankDetailsSectionProps> = ({ onDataChange, o
   };
 
   return (
-    <Surface style={styles.surface}>
+    <View style={styles.surface}>
       {/* QR Code Section */}
       <TouchableOpacity onPress={uploadQRImage}>
         <View style={styles.qrSection}>
           <View style={styles.qrContainer}>
             {qrImage ? (
-              <View style={styles.qrImageContainer}>
-                <IconButton 
-                  icon="check-circle" 
-                  size={40} 
-                  iconColor="#4CAF50"
-                  style={styles.qrIcon}
-                />
-                <Text style={styles.qrUploadedText}>QR Uploaded</Text>
-              </View>
+              <IconButton 
+                icon="check-circle" 
+                size={40} 
+                iconColor="#4CAF50"
+                style={styles.qrIcon}
+              />
             ) : (
-              <View>
-                <IconButton 
-                  icon="qrcode" 
-                  size={40} 
-                  iconColor="#ff5722"
-                  style={styles.qrIcon}
-                />
-                <Text style={styles.qrText}>Upload QR</Text>
-              </View>
+              <IconButton 
+                icon="qrcode" 
+                size={40} 
+                iconColor="#ff5722"
+                style={styles.qrIcon}
+              />
             )}
           </View>
+          <Text style={styles.qrText}>Upload QR</Text>
         </View>
       </TouchableOpacity>
 
@@ -431,7 +489,7 @@ const BankDetailsSection: React.FC<BankDetailsSectionProps> = ({ onDataChange, o
               mode="outlined"
               style={getInputStyle("bankName")}
               outlineStyle={getOutlineStyle("bankName")}
-              placeholder="123445"
+              placeholder=""
               textColor="#333"
 
             />
@@ -448,7 +506,7 @@ const BankDetailsSection: React.FC<BankDetailsSectionProps> = ({ onDataChange, o
               mode="outlined"
               style={getInputStyle("bankBranch")}
               outlineStyle={getOutlineStyle("bankBranch")}
-              placeholder="XYZ"
+              placeholder=""
               textColor="#333"
             />
           </View>
@@ -519,7 +577,7 @@ const BankDetailsSection: React.FC<BankDetailsSectionProps> = ({ onDataChange, o
               mode="outlined"
               style={getInputStyle("ifscCode")}
               outlineStyle={getOutlineStyle("ifscCode")}
-              placeholder="XYZ"
+              placeholder=""
                textColor="#333"
             />
           </View>
@@ -581,109 +639,55 @@ const BankDetailsSection: React.FC<BankDetailsSectionProps> = ({ onDataChange, o
           </View>
         </View>
 
-        {/* City, Pin Code, State Row - FIXED FOR iOS */}
+        {/* Pin Code and City Row */}
         <View style={styles.row}>
-          <View style={styles.thirdWidth}>
-            <Text style={styles.label}>City</Text>
-            <Menu
-              visible={cityMenuVisible}
-              onDismiss={() => setCityMenuVisible(false)}
-              contentStyle={{ maxHeight: 200 }}
-              anchor={
-                <Button
-                  mode="outlined"
-                  onPress={() => setCityMenuVisible(true)}
-                  style={[getInputStyle("city"), { justifyContent: 'flex-start' }]}
-                  labelStyle={{ fontSize: 16, color: bankFormData.city ? '#333' : '#333' }}
-                  contentStyle={{ flexDirection: 'row-reverse' }}
-                  icon="chevron-down"
-                >
-                  {bankFormData.city || "city"}
-                </Button>
-              }
-            >
-              <ScrollView style={{ maxHeight: 150 }}>
-                {CITIES.map((city: string) => (
-                  <Menu.Item
-                    key={city}
-                    onPress={() =>
-                      handleMenuItemPress("city", city, setCityMenuVisible)
-                    }
-                    title={city}
-                    titleStyle={{ fontSize: 14 }}
-                  />
-                ))}
-              </ScrollView>
-            </Menu>
-          </View>
-
-          <View style={styles.thirdWidth}>
+          <View style={styles.halfWidth}>
             <Text style={styles.label}>Pin Code</Text>
-            <Menu
-              visible={pinCodeMenuVisible}
-              onDismiss={() => setPinCodeMenuVisible(false)}
-              contentStyle={{ maxHeight: 200 }}
-              anchor={
-                <Button
-                  mode="outlined"
-                  onPress={() => setPinCodeMenuVisible(true)}
-                  style={[getInputStyle("pinCode"), { justifyContent: 'flex-start' }]}
-                  labelStyle={{ fontSize: 16, color: bankFormData.pinCode ? '#333' : '#333' }}
-                  contentStyle={{ flexDirection: 'row-reverse' }}
-                  icon="chevron-down"
-                >
-                  {bankFormData.pinCode || "XXXXXX"}
-                </Button>
-              }
-            >
-              <ScrollView style={{ maxHeight: 150 }}>
-                {PIN_CODES.map((pin: string) => (
-                  <Menu.Item
-                    key={pin}
-                    onPress={() =>
-                      handleMenuItemPress("pinCode", pin, setPinCodeMenuVisible)
-                    }
-                    title={pin}
-                    titleStyle={{ fontSize: 14 }}
-                  />
-                ))}
-              </ScrollView>
-            </Menu>
+            <TextInput
+              value={bankFormData.pinCode}
+              onChangeText={(text: string) => handleBankInputChange("pinCode", text)}
+              onFocus={() => handleFocus("pinCode")}
+              onBlur={handleBlur}
+              mode="outlined"
+              keyboardType="numeric"
+              maxLength={6}
+              style={getInputStyle("pinCode")}
+              outlineStyle={getOutlineStyle("pinCode")}
+              placeholder=""
+              textColor="#333"
+            />
           </View>
 
-          <View style={styles.thirdWidth}>
-            <Text style={styles.label}>State</Text>
-            <Menu
-              visible={stateMenuVisible}
-              onDismiss={() => setStateMenuVisible(false)}
-              contentStyle={{ maxHeight: 200 }}
-              anchor={
-                <Button
-                  mode="outlined"
-                  onPress={() => setStateMenuVisible(true)}
-                  style={[getInputStyle("state"), { justifyContent: 'flex-start' }]}
-                  labelStyle={{ fontSize: 16, color: bankFormData.state ? '#333' : '#333' }}
-                  contentStyle={{ flexDirection: 'row-reverse' }}
-                  icon="chevron-down"
-                >
-                  {bankFormData.state || "state"}
-                </Button>
-              }
-            >
-              <ScrollView style={{ maxHeight: 150 }}>
-                {STATES.map((state: string) => (
-                  <Menu.Item
-                    key={state}
-                    onPress={() =>
-                      handleMenuItemPress("state", state, setStateMenuVisible)
-                    }
-                    title={state}
-                    titleStyle={{ fontSize: 14 }}
-                  />
-                ))}
-              </ScrollView>
-            </Menu>
+          <View style={styles.halfWidth}>
+            <Text style={styles.label}>City</Text>
+            <TextInput
+              value={bankFormData.city}
+              onChangeText={(text: string) => handleBankInputChange("city", text)}
+              onFocus={() => handleFocus("city")}
+              onBlur={handleBlur}
+              mode="outlined"
+              style={getInputStyle("city")}
+              outlineStyle={getOutlineStyle("city")}
+              placeholder=""
+              textColor="#333"
+            />
           </View>
+        </View>
+
+        {/* State Row - Single */}
+        <View style={styles.fullWidth}>
+          <Text style={styles.label}>State</Text>
+          <TextInput
+            value={bankFormData.state}
+            onChangeText={(text: string) => handleBankInputChange("state", text)}
+            onFocus={() => handleFocus("state")}
+            onBlur={handleBlur}
+            mode="outlined"
+            style={getInputStyle("state")}
+            outlineStyle={getOutlineStyle("state")}
+            placeholder=""
+            textColor="#333"
+          />
         </View>
 
         {/* Image Display Section */}
@@ -789,7 +793,7 @@ const BankDetailsSection: React.FC<BankDetailsSectionProps> = ({ onDataChange, o
           </View>
         </Modal>
       </View>
-    </Surface>
+    </View>
   );
 };
 

@@ -115,13 +115,42 @@ const ReviewCard = () => {
   if (!isAuthenticated || !token) {
     return (
       <View style={styles.listContainer}>
-        <View style={{ padding: 20, alignItems: 'center', justifyContent: 'center', flex: 1 }}>
-          <Text style={{ fontSize: 18, textAlign: 'center', marginBottom: 10 }}>
-            Please login to view reviews
-          </Text>
-          <Text style={{ fontSize: 14, textAlign: 'center', color: '#666' }}>
-            You need to be authenticated to access review management
-          </Text>
+        <View style={{ 
+          padding: 20, 
+          alignItems: 'center', 
+          justifyContent: 'center', 
+          flex: 1,
+          backgroundColor: '#FDF7F1',
+        }}>
+          <View style={{
+            backgroundColor: '#FDF7F1',
+            padding: 24,
+            borderRadius: 16,
+            elevation: 4,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 8,
+            alignItems: 'center',
+          }}>
+            <Text style={{ 
+              fontSize: 18, 
+              textAlign: 'center', 
+              marginBottom: 10,
+              color: '#434140',
+              fontWeight: 'bold',
+            }}>
+              Please login to view reviews
+            </Text>
+            <Text style={{ 
+              fontSize: 14, 
+              textAlign: 'center', 
+              color: '#434140',
+              fontWeight: '500',
+            }}>
+              You need to be authenticated to access review management
+            </Text>
+          </View>
         </View>
       </View>
     );
@@ -166,27 +195,30 @@ const ReviewCard = () => {
         <MaterialIcons
           name="format-quote"
           size={24}
-          color="#FF4500"
+          color="#6F32AB"
           style={styles.openQuote}
         />
         <Text style={styles.descriptionText}>{item.review}</Text>
         <MaterialIcons
           name="format-quote"
           size={24}
-          color="#FF4500"
+          color="#6F32AB"
           style={styles.closeQuote}
         />
       </View>
 
       {/* Footer */}
-      <Text style={styles.footerText}>Ordered : {new Date(item.orderDate).toLocaleDateString()}</Text>
+      <Text style={styles.footerText}>
+        <Text style={{ color: "#434140" }}>Ordered : </Text>
+        <Text style={{ color: "#6F32AB", fontWeight: "bold" }}>{new Date(item.orderDate).toLocaleDateString()}</Text>
+      </Text>
       
       {/* Review metadata */}
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 10, paddingHorizontal: 15 }}>
-        <Text style={{ fontSize: 12, color: '#666' }}>
+        <Text style={{ fontSize: 12, color: '#434140', fontWeight: '500' }}>
           Review Date: {new Date(item.reviewDate).toLocaleDateString()}
         </Text>
-        <Text style={{ fontSize: 12, color: '#666' }}>
+        <Text style={{ fontSize: 12, color: '#434140', fontWeight: '500' }}>
           Order: #{item.orderNumber}
         </Text>
       </View>
@@ -197,22 +229,38 @@ const ReviewCard = () => {
     <View style={{ flex: 1 }}>
       {/* Review Statistics Header */}
       {stats && (
-        <View style={{ padding: 15, backgroundColor: '#f8f9fa', margin: 10, borderRadius: 8 }}>
-          <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 10, textAlign: 'center' }}>
+        <View style={{ 
+          padding: 16, 
+          backgroundColor: '#FDF7F1', 
+          margin: 10, 
+          borderRadius: 16,
+          elevation: 4,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 8,
+        }}>
+          <Text style={{ 
+            fontSize: 18, 
+            fontWeight: 'bold', 
+            marginBottom: 10, 
+            textAlign: 'center',
+            color: '#434140'
+          }}>
             Review Summary
           </Text>
           <View style={{ flexDirection: 'row', justifyContent: 'space-around' }}>
             <View style={{ alignItems: 'center' }}>
-              <Text style={{ fontSize: 24, fontWeight: 'bold', color: '#FF4500' }}>
+              <Text style={{ fontSize: 24, fontWeight: 'bold', color: '#6F32AB' }}>
                 {stats.averageRating.toFixed(1)}
               </Text>
-              <Text style={{ fontSize: 12, color: '#666' }}>Average Rating</Text>
+              <Text style={{ fontSize: 12, color: '#434140', fontWeight: '500' }}>Average Rating</Text>
             </View>
             <View style={{ alignItems: 'center' }}>
-              <Text style={{ fontSize: 24, fontWeight: 'bold', color: '#FF4500' }}>
+              <Text style={{ fontSize: 24, fontWeight: 'bold', color: '#6F32AB' }}>
                 {stats.totalReviews}
               </Text>
-              <Text style={{ fontSize: 12, color: '#666' }}>Total Reviews</Text>
+              <Text style={{ fontSize: 12, color: '#434140', fontWeight: '500' }}>Total Reviews</Text>
             </View>
           </View>
         </View>
@@ -232,12 +280,12 @@ const ReviewCard = () => {
         ListEmptyComponent={
           loading ? (
             <View style={{ padding: 20, alignItems: 'center' }}>
-              <ActivityIndicator size="large" color="#FF4500" />
-              <Text style={{ marginTop: 10 }}>Loading reviews...</Text>
+              <ActivityIndicator size="large" color="#6F32AB" />
+              <Text style={{ marginTop: 10, color: '#434140', fontWeight: 'bold' }}>Loading reviews...</Text>
             </View>
           ) : (
             <View style={{ padding: 20, alignItems: 'center' }}>
-              <Text style={{ fontSize: 16, color: '#666' }}>No reviews found</Text>
+              <Text style={{ fontSize: 16, color: '#434140', fontWeight: 'bold' }}>No reviews found</Text>
             </View>
           )
         }
@@ -245,9 +293,9 @@ const ReviewCard = () => {
           hasNextPage ? (
             <View style={{ padding: 20, alignItems: 'center' }}>
               {loading ? (
-                <ActivityIndicator size="small" color="#FF4500" />
+                <ActivityIndicator size="small" color="#6F32AB" />
               ) : (
-                <Text style={{ color: '#FF4500' }}>Load More Reviews</Text>
+                <Text style={{ color: '#6F32AB', fontWeight: 'bold' }}>Load More Reviews</Text>
               )}
             </View>
           ) : null

@@ -1,24 +1,23 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Image, ScrollView, Text, TouchableOpacity, View, Alert, TextInput } from "react-native";
 import {
   Button,
   Card,
   Provider as PaperProvider,
-  Searchbar,
   Surface,
   ActivityIndicator,
   IconButton,
   Icon,
+  SegmentedButtons,
 } from "react-native-paper";
 import { styles } from "../css/restaurant/restaurantmenu";
-import AddCategoryModal from "./add-category-modal";
-import AddItemModal from "./add-item-modal";
-import AddOfferModal from "./add-offer-modal";
-import SeeAllPage from "./see-all-page";
 import { useAppSelector } from "../../../store/hooks";
 import { apiConnector } from "../../../utils";
+import AddItemModal from "./add-item-modal";
+import AddCategoryModal from "./add-category-modal";
+import AddOfferModal from "./add-offer-modal";
 
-// Types
+// Types (reusing from menuitems.tsx)
 interface Category {
   id: string;
   name: string;
@@ -58,14 +57,10 @@ interface Offer {
   offerTitle: string;
   discountAmount: number;
   offerImage: string;
+  startDate?: string;
+  endDate?: string;
+  isActive?: boolean;
   [key: string]: any;
-}
-
-interface CategoryData {
-  id: string;
-  name: string;
-  description: string;
-  image: string;
 }
 
 interface ItemData {
@@ -81,6 +76,13 @@ interface ItemData {
   image: string;
   restaurant: string;
   isVegetarian: boolean;
+}
+
+interface CategoryData {
+  id: string;
+  name: string;
+  description: string;
+  image: string;
 }
 
 interface OfferData {
@@ -123,20 +125,7 @@ const isImageUrl = (image: string): boolean => {
   return Boolean(image && (image.startsWith("http") || image.startsWith("file")));
 };
 
-// Memoized Components
-const AddItemCard = React.memo<{ onPress: () => void; title?: string; icon?: string }>(({ 
-  onPress, 
-  title = "Add Items", 
-  icon = "+" 
-}) => (
-  <TouchableOpacity onPress={onPress} style={styles.addCard}>
-    <View style={styles.addIconContainer}>
-      <Text style={styles.addIcon}>{icon}</Text>
-    </View>
-    <Text style={styles.addText}>{title}</Text>
-  </TouchableOpacity>
-));
-
+// Card Components (reusing from menuitems.tsx)
 const ItemCard = React.memo<{ 
   item: Item; 
   isSelected: boolean; 
@@ -348,6 +337,7 @@ const OfferCard = React.memo<{
         <Text style={styles.promoTitle} numberOfLines={1}>
           {offer.offerTitle}
         </Text>
+        <Text style={styles.promoPrice} numberOfLines={1}>₹{offer.discountAmount}</Text>
       </View>
       {isSelected && (
         <View style={styles.actionButtons}>
@@ -381,270 +371,19 @@ const OfferCard = React.memo<{
   </TouchableOpacity>
 ));
 
-// Section Components
-interface ItemsSectionProps {
-  onAddItem: () => void;
-  onSeeAllItems: () => void;
-  items: Item[];
-  isLoading: boolean;
-  selectedItemId: string | null;
-  onItemSelect: (itemId: string) => void;
-  onItemView: (item: Item) => void;
-  onItemEdit: (item: Item) => void;
-  onItemDelete: (item: Item) => void;
-}
-
-const ItemsSection = React.memo<ItemsSectionProps>(({ 
-  onAddItem, 
-  onSeeAllItems,
-  items, 
-  isLoading, 
-  selectedItemId, 
-  onItemSelect, 
-  onItemView,
-  onItemEdit, 
-  onItemDelete 
-}) => (
-  <View style={styles.section}>
-    <View style={styles.offersHeader}>
-      <Text style={styles.offersTitle}>Items</Text>
-      <TouchableOpacity onPress={onAddItem} style={styles.addOfferButton}>
-        <Text style={styles.addOfferText}>+</Text>
-      </TouchableOpacity>
-      <TouchableOpacity onPress={onSeeAllItems}>
-        <Text style={styles.seeAllText}>See all</Text>
-      </TouchableOpacity>
-    </View>
-    {isLoading ? (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="small" color="#ff6b35" />
-        <Text style={styles.loadingText}>Loading items...</Text>
-      </View>
-    ) : items.length > 0 ? (
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.horizontalScroll}
-      >
-        {items.map((item) => (
-          <ItemCard 
-            key={item.id} 
-            item={item} 
-            isSelected={selectedItemId === item.id}
-            onSelect={() => onItemSelect(item.id)}
-            onView={() => onItemView(item)}
-            onEdit={() => onItemEdit(item)}
-            onDelete={() => onItemDelete(item)}
-          />
-        ))}
-      </ScrollView>
-    ) : (
-      <View style={styles.noDataContainer}>
-        <Text style={styles.noDataText}>No items added yet.</Text>
-        <Text style={styles.noDataSubtext}>Create your first item to get started.</Text>
-      </View>
-    )}
-  </View>
-));
-
-interface CategoriesSectionProps {
-  categories: Category[];
-  onCategoryPress: (categoryName: string) => void;
-  onAddCategory: () => void;
-  onSeeAllCategories: () => void;
-  isLoading: boolean;
-  selectedCategoryId: string | null;
-  onCategorySelect: (categoryId: string) => void;
-  onCategoryView: (category: Category) => void;
-  onCategoryEdit: (category: Category) => void;
-  onCategoryDelete: (category: Category) => void;
-}
-
-const CategoriesSection = React.memo<CategoriesSectionProps>(({ 
-  categories, 
-  onCategoryPress, 
-  onAddCategory, 
-  onSeeAllCategories,
-  isLoading,
-  selectedCategoryId,
-  onCategorySelect,
-  onCategoryView,
-  onCategoryEdit,
-  onCategoryDelete
-}) => (
-  <View style={styles.section}>
-    <View style={styles.offersHeader}>
-      <Text style={styles.offersTitle}>Category</Text>
-      <TouchableOpacity onPress={onAddCategory} style={styles.addOfferButton}>
-        <Text style={styles.addOfferText}>+</Text>
-      </TouchableOpacity>
-      <TouchableOpacity onPress={onSeeAllCategories}>
-        <Text style={styles.seeAllText}>See all</Text>
-      </TouchableOpacity>
-    </View>
-    {isLoading ? (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="small" color="#ff6b35" />
-        <Text style={styles.loadingText}>Loading categories...</Text>
-      </View>
-    ) : categories.length > 0 ? (
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.horizontalScroll}
-      >
-        {categories.map((category) => (
-          <CategoryCard 
-            key={category.id} 
-            category={category}
-            isSelected={selectedCategoryId === category.id}
-            onSelect={() => onCategorySelect(category.id)}
-            onView={() => onCategoryView(category)}
-            onEdit={() => onCategoryEdit(category)}
-            onDelete={() => onCategoryDelete(category)}
-          />
-        ))}
-      </ScrollView>
-    ) : (
-      <View style={styles.noDataContainer}>
-        <Text style={styles.noDataText}>No categories added yet.</Text>
-        <Text style={styles.noDataSubtext}>Create your first category to organize items.</Text>
-      </View>
-    )}
-  </View>
-));
-
-interface BestSellerSectionProps {
-  bestSellers: Item[];
-  onSeeAll: () => void;
-  isLoading: boolean;
-  selectedBestSellerId: string | null;
-  onBestSellerSelect: (itemId: string) => void;
-  onBestSellerView: (item: Item) => void;
-  onBestSellerEdit: (item: Item) => void;
-  onBestSellerDelete: (item: Item) => void;
-}
-
-const BestSellerSection = React.memo<BestSellerSectionProps>(({ 
-  bestSellers, 
-  onSeeAll, 
-  isLoading,
-  selectedBestSellerId,
-  onBestSellerSelect,
-  onBestSellerView,
-  onBestSellerEdit,
-  onBestSellerDelete
-}) => (
-  <View style={styles.section}>
-    <View style={styles.offersHeader}>
-      <Text style={styles.offersTitle}>Best Seller</Text>
-      <TouchableOpacity onPress={onSeeAll}>
-        <Text style={styles.seeAllText}>See all</Text>
-      </TouchableOpacity>
-    </View>
-    {isLoading ? (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="small" color="#ff6b35" />
-        <Text style={styles.loadingText}>Loading best sellers...</Text>
-      </View>
-    ) : bestSellers.length > 0 ? (
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.horizontalScroll}
-      >
-        {bestSellers.map((item) => (
-          <BestSellerCard 
-            key={item.id} 
-            item={item}
-            isSelected={selectedBestSellerId === item.id}
-            onSelect={() => onBestSellerSelect(item.id)}
-            onView={() => onBestSellerView(item)}
-            onEdit={() => onBestSellerEdit(item)}
-            onDelete={() => onBestSellerDelete(item)}
-          />
-        ))}
-      </ScrollView>
-    ) : (
-      <View style={styles.noDataContainer}>
-        <Text style={styles.noDataText}>No best sellers yet.</Text>
-        <Text style={styles.noDataSubtext}>Items will appear here based on order volume.</Text>
-      </View>
-    )}
-  </View>
-));
-
-interface OffersSectionProps {
-  onAddOffer: () => void;
-  onSeeAllOffers: () => void;
-  offers: Offer[];
-  isLoading: boolean;
-  selectedOfferId: string | null;
-  onOfferSelect: (offerId: string) => void;
-  onOfferView: (offer: Offer) => void;
-  onOfferEdit: (offer: Offer) => void;
-  onOfferDelete: (offer: Offer) => void;
-}
-
-const OffersSection = React.memo<OffersSectionProps>(({ 
-  onAddOffer, 
-  onSeeAllOffers, 
-  offers, 
-  isLoading,
-  selectedOfferId,
-  onOfferSelect,
-  onOfferView,
-  onOfferEdit,
-  onOfferDelete
-}) => (
-  <View style={styles.section}>
-    <View style={styles.offersHeader}>
-      <Text style={styles.offersTitle}>Offers</Text>
-      <TouchableOpacity onPress={onAddOffer} style={styles.addOfferButton}>
-        <Text style={styles.addOfferText}>+</Text>
-      </TouchableOpacity>
-      <TouchableOpacity onPress={onSeeAllOffers}>
-        <Text style={styles.seeAllText}>See all</Text>
-      </TouchableOpacity>
-    </View>
-
-    {isLoading ? (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="small" color="#ff6b35" />
-        <Text style={styles.loadingText}>Loading offers...</Text>
-      </View>
-    ) : offers.length > 0 ? (
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.horizontalScroll}
-      >
-        {offers.map((offer) => (
-          <OfferCard 
-            key={offer._id || offer.id} 
-            offer={offer}
-            isSelected={selectedOfferId === (offer._id || offer.id)}
-            onSelect={() => onOfferSelect(offer._id || offer.id || '')}
-            onView={() => onOfferView(offer)}
-            onEdit={() => onOfferEdit(offer)}
-            onDelete={() => onOfferDelete(offer)}
-          />
-        ))}
-      </ScrollView>
-    ) : (
-      <View style={styles.noDataContainer}>
-        <Text style={styles.noDataText}>No offers added yet.</Text>
-        <Text style={styles.noDataSubtext}>Create your first offer to attract customers.</Text>
-      </View>
-    )}
-  </View>
-));
-
 // Main Component
-const FoodDeliveryApp: React.FC = React.memo(() => {
+interface SeeAllPageProps {
+  initialTab?: 'items' | 'categories' | 'bestSellers' | 'offers';
+  onBack?: () => void;
+}
+
+const SeeAllPage: React.FC<SeeAllPageProps> = ({ 
+  initialTab = 'items', 
+  onBack 
+}) => {
   // State management
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [searchQuery, setSearchQuery] = useState("");
-  const [filteredItems, setFilteredItems] = useState<Item[]>([]);
   
   // Selection states
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
@@ -652,20 +391,25 @@ const FoodDeliveryApp: React.FC = React.memo(() => {
   const [selectedBestSellerId, setSelectedBestSellerId] = useState<string | null>(null);
   const [selectedOfferId, setSelectedOfferId] = useState<string | null>(null);
   
-  // Modal states
-  const [showOfferModal, setShowOfferModal] = useState(false);
-  const [showItemModal, setShowItemModal] = useState(false);
-  const [showCategoryModal, setShowCategoryModal] = useState(false);
-  const [showSeeAllPage, setShowSeeAllPage] = useState(false);
-  const [seeAllPageTab, setSeeAllPageTab] = useState<'items' | 'categories' | 'bestSellers' | 'offers'>('items');
+  // Data states
+  const [offers, setOffers] = useState<Offer[]>([]);
+  const [items, setItems] = useState<Item[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [bestSellers, setBestSellers] = useState<Item[]>([]);
   
-  // Edit modal states
-  const [showEditItemModal, setShowEditItemModal] = useState(false);
-  const [editingItem, setEditingItem] = useState<Item | null>(null);
+  // Loading states
+  const [isLoadingCategories, setIsLoadingCategories] = useState(false);
+  const [isLoadingItems, setIsLoadingItems] = useState(false);
+  const [isLoadingBestSellers, setIsLoadingBestSellers] = useState(false);
+  const [isLoadingOffers, setIsLoadingOffers] = useState(false);
   
   // View modal states
   const [showViewItemModal, setShowViewItemModal] = useState(false);
   const [viewingItem, setViewingItem] = useState<ItemData | null>(null);
+  
+  // Edit modal states
+  const [showEditItemModal, setShowEditItemModal] = useState(false);
+  const [editingItem, setEditingItem] = useState<Item | null>(null);
   
   // Category modal states
   const [showViewCategoryModal, setShowViewCategoryModal] = useState(false);
@@ -679,30 +423,13 @@ const FoodDeliveryApp: React.FC = React.memo(() => {
   const [showEditOfferModal, setShowEditOfferModal] = useState(false);
   const [editingOffer, setEditingOffer] = useState<OfferData | null>(null);
   
-  // Data states
-  const [offers, setOffers] = useState<Offer[]>([]);
-  const [items, setItems] = useState<Item[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [bestSellers, setBestSellers] = useState<Item[]>([]);
-  
-  // Loading states
-  const [isLoadingCategories, setIsLoadingCategories] = useState(false);
-  const [isCreatingCategory, setIsCreatingCategory] = useState(false);
-  const [isLoadingItems, setIsLoadingItems] = useState(false);
-  const [isCreatingItem, setIsCreatingItem] = useState(false);
-  const [isLoadingBestSellers, setIsLoadingBestSellers] = useState(false);
-  const [isLoadingOffers, setIsLoadingOffers] = useState(false);
-  const [isCreatingOffer, setIsCreatingOffer] = useState(false);
+  // Loading states for edit operations
+  const [isUpdatingItem, setIsUpdatingItem] = useState(false);
+  const [isUpdatingCategory, setIsUpdatingCategory] = useState(false);
   const [isUpdatingOffer, setIsUpdatingOffer] = useState(false);
 
   // Redux state
   const { user, token } = useAppSelector((state) => state.auth);
-
-  // Debug modal state changes
-  React.useEffect(() => {
-    console.log("🔍 [VIEW] Modal state changed - showViewItemModal:", showViewItemModal);
-    console.log("🔍 [VIEW] Viewing item:", viewingItem);
-  }, [showViewItemModal, viewingItem]);
 
   // Initialize data when authenticated
   useEffect(() => {
@@ -713,19 +440,6 @@ const FoodDeliveryApp: React.FC = React.memo(() => {
       fetchOffers();
     }
   }, [user, token]);
-
-  // Update filtered items when search query or items change
-  useEffect(() => {
-    if (searchQuery.trim() === "") {
-      setFilteredItems(items);
-    } else {
-      const filtered = items.filter(item =>
-        item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.category?.name?.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-      setFilteredItems(filtered);
-    }
-  }, [searchQuery, items]);
 
   // API Functions
   const fetchOffers = useCallback(async () => {
@@ -742,7 +456,7 @@ const FoodDeliveryApp: React.FC = React.memo(() => {
     } catch (error: any) {
       setOffers([]);
       if (!error.message?.includes('timeout')) {
-        Alert.alert("Warning", "Failed to fetch offers. Showing empty offers section.");
+        Alert.alert("Warning", "Failed to fetch offers.");
       }
     } finally {
       setIsLoadingOffers(false);
@@ -794,15 +508,12 @@ const FoodDeliveryApp: React.FC = React.memo(() => {
       const response = await apiConnector.getAllItems(token);
       if (response.success && response.data) {
         setItems(response.data);
-        setFilteredItems(response.data);
       } else {
         setItems([]);
-        setFilteredItems([]);
       }
     } catch (error: any) {
       Alert.alert("Error", "Failed to fetch items. Please try again.");
       setItems([]);
-      setFilteredItems([]);
     } finally {
       setIsLoadingItems(false);
     }
@@ -813,7 +524,7 @@ const FoodDeliveryApp: React.FC = React.memo(() => {
 
     setIsLoadingBestSellers(true);
     try {
-      const response = await apiConnector.getBestSellers(token, 10);
+      const response = await apiConnector.getBestSellers(token, 50); // Get more best sellers
       if (response.success && response.data) {
         setBestSellers(response.data);
       } else {
@@ -827,72 +538,14 @@ const FoodDeliveryApp: React.FC = React.memo(() => {
     }
   }, [user, token]);
 
-  // Create handlers
-  const handleSaveCategory = useCallback(async (categoryData: CategoryData): Promise<void> => {
-    if (!user || !token) {
-      Alert.alert("Error", "Please login to create categories");
-      return;
-    }
-
-    setIsCreatingCategory(true);
-    try {
-      const apiData = {
-        name: categoryData.name,
-        description: categoryData.description || ""
-      };
-
-      let response;
-      if (categoryData.image && 
-          !categoryData.image.includes('unsplash.com') && 
-          !categoryData.image.includes('default')) {
-        const formData = new FormData();
-        formData.append('name', categoryData.name);
-        formData.append('description', categoryData.description || '');
-        
-        const imageFile = {
-          uri: categoryData.image,
-          type: 'image/jpeg',
-          name: 'category_image.jpg'
-        } as any;
-        
-        formData.append('image', imageFile);
-        response = await apiConnector.createCategoryWithImage(formData, token);
-      } else {
-        response = await apiConnector.createCategory(apiData, token);
-      }
-
-      if (response.success && response.data) {
-        const newCategory: Category = {
-          id: response.data._id,
-          name: response.data.name,
-          image: response.data.image || "",
-          description: response.data.description,
-          isActive: response.data.isActive,
-          itemCount: response.data.itemCount,
-          createdAt: response.data.createdAt,
-          updatedAt: response.data.updatedAt
-        };
-
-        setCategories(prev => [...prev, newCategory]);
-        setShowCategoryModal(false);
-        Alert.alert("Success", "Category created successfully!");
-      } else {
-        Alert.alert("Error", response.message || "Failed to create category");
-      }
-    } catch (error: any) {
-      Alert.alert("Error", "Failed to create category. Please try again.");
-    } finally {
-      setIsCreatingCategory(false);
-    }
-  }, [user, token]);
-
+  // Update item handler
   const handleUpdateItem = useCallback(async (itemData: ItemData): Promise<void> => {
     if (!user || !token || !editingItem) {
       Alert.alert("Error", "Please login to update items");
       return;
     }
 
-    setIsCreatingItem(true);
+    setIsUpdatingItem(true);
     try {
       const apiData = {
         name: itemData.name,
@@ -949,7 +602,6 @@ const FoodDeliveryApp: React.FC = React.memo(() => {
         };
 
         setItems(prev => prev.map(item => item.id === editingItem.id ? updatedItem : item));
-        setFilteredItems(prev => prev.map(item => item.id === editingItem.id ? updatedItem : item));
         setBestSellers(prev => prev.map(item => item.id === editingItem.id ? updatedItem : item));
         setShowEditItemModal(false);
         setEditingItem(null);
@@ -960,7 +612,7 @@ const FoodDeliveryApp: React.FC = React.memo(() => {
     } catch (error: any) {
       Alert.alert("Error", "Failed to update item. Please try again.");
     } finally {
-      setIsCreatingItem(false);
+      setIsUpdatingItem(false);
     }
   }, [user, token, editingItem]);
 
@@ -970,7 +622,7 @@ const FoodDeliveryApp: React.FC = React.memo(() => {
       return;
     }
 
-    setIsCreatingCategory(true);
+    setIsUpdatingCategory(true);
     try {
       const apiData = {
         name: categoryData.name,
@@ -1017,7 +669,7 @@ const FoodDeliveryApp: React.FC = React.memo(() => {
     } catch (error: any) {
       Alert.alert("Error", "Failed to update category. Please try again.");
     } finally {
-      setIsCreatingCategory(false);
+      setIsUpdatingCategory(false);
     }
   }, [user, token, editingCategory]);
 
@@ -1101,120 +753,29 @@ const FoodDeliveryApp: React.FC = React.memo(() => {
     }
   }, [user, token, editingOffer]);
 
-  const handleSaveItem = useCallback(async (itemData: ItemData): Promise<void> => {
-    if (!user || !token) {
-      Alert.alert("Error", "Please login to create items");
-      return;
-    }
+  // Filter data based on search query
+  const filteredItems = items.filter(item =>
+    item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    item.category?.name?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
-    setIsCreatingItem(true);
-    try {
-      const apiData = {
-        name: itemData.name,
-        description: itemData.description || "",
-        category: itemData.category,
-        itemCategory: itemData.itemCategory || 'Veg',
-        price: parseFloat(itemData.price.toString()),
-        availability: itemData.availability || 'in-stock',
-        isDietMeal: itemData.isDietMeal || false,
-        calories: itemData.calories ? parseInt(itemData.calories.toString()) : undefined
-      };
+  const filteredCategories = categories.filter(category =>
+    category.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    category.description?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
-      let response;
-      if (itemData.image && 
-          !itemData.image.includes('unsplash.com') && 
-          !itemData.image.includes('default')) {
-        const formData = new FormData();
-        formData.append('name', itemData.name);
-        formData.append('description', itemData.description || '');
-        formData.append('category', itemData.category);
-        formData.append('itemCategory', itemData.itemCategory || 'Veg');
-        formData.append('price', itemData.price.toString());
-        formData.append('availability', itemData.availability || 'in-stock');
-        formData.append('isDietMeal', (itemData.isDietMeal || false).toString());
-        if (itemData.calories) {
-          formData.append('calories', itemData.calories.toString());
-        }
-        
-        const imageFile = {
-          uri: itemData.image,
-          type: 'image/jpeg',
-          name: 'item_image.jpg'
-        } as any;
-        
-        formData.append('image', imageFile);
-        response = await apiConnector.createItemWithImage(formData, token);
-      } else {
-        response = await apiConnector.createItem(apiData, token);
-      }
+  const filteredBestSellers = bestSellers.filter(item =>
+    item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    item.category?.name?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
-      if (response.success && response.data) {
-        setItems(prev => [...prev, response.data]);
-        setFilteredItems(prev => [...prev, response.data]);
-        setShowItemModal(false);
-        Alert.alert("Success", "Item created successfully!");
-      } else {
-        Alert.alert("Error", response.message || "Failed to create item");
-      }
-    } catch (error: any) {
-      Alert.alert("Error", "Failed to create item. Please try again.");
-    } finally {
-      setIsCreatingItem(false);
-    }
-  }, [user, token]);
-  
-  // Event handlers
-  const handleAddCategory = useCallback(() => {
-    setShowCategoryModal(true);
-  }, []);
-
-  const handleAddItem = useCallback(() => {
-    setShowItemModal(true);
-  }, []);
-
-  const handleAddOffer = useCallback(() => {
-    setShowOfferModal(true);
-  }, []);
-
-  const handleCategoryPress = useCallback((categoryName: string) => {
-    const categoryItems = items.filter(
-      (item) => item.category?.name?.toLowerCase() === categoryName.toLowerCase()
-    );
-    console.log("Items in category:", categoryItems);
-  }, [items]);
-
-  const handleSeeAllItems = useCallback(() => {
-    setSeeAllPageTab('items');
-    setShowSeeAllPage(true);
-  }, []);
-
-  const handleSeeAllCategories = useCallback(() => {
-    setSeeAllPageTab('categories');
-    setShowSeeAllPage(true);
-  }, []);
-
-  const handleSeeAllBestSellers = useCallback(() => {
-    setSeeAllPageTab('bestSellers');
-    setShowSeeAllPage(true);
-  }, []);
-
-  const handleSeeAllOffers = useCallback(() => {
-    setSeeAllPageTab('offers');
-    setShowSeeAllPage(true);
-  }, []);
-
-  const handleAddBestSeller = useCallback(() => {
-    console.log("Add best seller pressed");
-  }, []);
-
-  const handleSearch = useCallback((query: string) => {
-    setSearchQuery(query);
-  }, []);
+  const filteredOffers = offers.filter(offer =>
+    offer.offerTitle.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   // Selection handlers
   const handleItemSelect = useCallback((itemId: string) => {
     setSelectedItemId(selectedItemId === itemId ? null : itemId);
-    // Clear other selections
     setSelectedCategoryId(null);
     setSelectedBestSellerId(null);
     setSelectedOfferId(null);
@@ -1222,7 +783,6 @@ const FoodDeliveryApp: React.FC = React.memo(() => {
 
   const handleCategorySelect = useCallback((categoryId: string) => {
     setSelectedCategoryId(selectedCategoryId === categoryId ? null : categoryId);
-    // Clear other selections
     setSelectedItemId(null);
     setSelectedBestSellerId(null);
     setSelectedOfferId(null);
@@ -1230,7 +790,6 @@ const FoodDeliveryApp: React.FC = React.memo(() => {
 
   const handleBestSellerSelect = useCallback((itemId: string) => {
     setSelectedBestSellerId(selectedBestSellerId === itemId ? null : itemId);
-    // Clear other selections
     setSelectedItemId(null);
     setSelectedCategoryId(null);
     setSelectedOfferId(null);
@@ -1238,7 +797,6 @@ const FoodDeliveryApp: React.FC = React.memo(() => {
 
   const handleOfferSelect = useCallback((offerId: string) => {
     setSelectedOfferId(selectedOfferId === offerId ? null : offerId);
-    // Clear other selections
     setSelectedItemId(null);
     setSelectedCategoryId(null);
     setSelectedBestSellerId(null);
@@ -1247,13 +805,13 @@ const FoodDeliveryApp: React.FC = React.memo(() => {
   // View handlers
   const handleItemView = useCallback(async (item: Item) => {
     try {
-      console.log("🔍 [VIEW] Starting view for item:", item);
+      console.log("🔍 [SEE-ALL-VIEW] Starting view for item:", item);
       const response = await apiConnector.getItemById(item.id, token);
-      console.log("🔍 [VIEW] API response:", response);
+      console.log("🔍 [SEE-ALL-VIEW] API response:", response);
       
       if (response.success) {
         const itemData = response.data;
-        console.log("🔍 [VIEW] Item data from API:", itemData);
+        console.log("🔍 [SEE-ALL-VIEW] Item data from API:", itemData);
         
         // Transform API data to match ItemData interface
         const viewItemData: ItemData = {
@@ -1271,26 +829,26 @@ const FoodDeliveryApp: React.FC = React.memo(() => {
           isVegetarian: itemData.isVegetarian || false
         };
         
-        console.log("🔍 [VIEW] Transformed view data:", viewItemData);
-        console.log("🔍 [VIEW] Setting viewing item and opening modal");
+        console.log("🔍 [SEE-ALL-VIEW] Transformed view data:", viewItemData);
+        console.log("🔍 [SEE-ALL-VIEW] Setting viewing item and opening modal");
         
         setViewingItem(viewItemData);
         setShowViewItemModal(true);
         
-        console.log("🔍 [VIEW] Modal state should be updated");
+        console.log("🔍 [SEE-ALL-VIEW] Modal state should be updated");
       } else {
-        console.log("❌ [VIEW] API response failed:", response);
+        console.log("❌ [SEE-ALL-VIEW] API response failed:", response);
         Alert.alert("Error", "Failed to fetch item details");
       }
     } catch (error: any) {
-      console.log("❌ [VIEW] Error occurred:", error);
+      console.log("❌ [SEE-ALL-VIEW] Error occurred:", error);
       Alert.alert("Error", "Failed to fetch item details");
     }
   }, [token]);
 
   const handleCategoryView = useCallback(async (category: Category) => {
     try {
-      console.log("🔍 [CATEGORY-VIEW] Opening category view for:", category.id);
+      console.log("🔍 [SEE-ALL-CATEGORY-VIEW] Opening category view for:", category.id);
       
       const response = await apiConnector.getCategoryById(category.id, token);
       if (response.success) {
@@ -1304,7 +862,7 @@ const FoodDeliveryApp: React.FC = React.memo(() => {
           image: categoryData.image || "",
         };
         
-        console.log("🔍 [CATEGORY-VIEW] Transformed data:", transformedData);
+        console.log("🔍 [SEE-ALL-CATEGORY-VIEW] Transformed data:", transformedData);
         
         setViewingCategory(transformedData);
         setShowViewCategoryModal(true);
@@ -1312,20 +870,20 @@ const FoodDeliveryApp: React.FC = React.memo(() => {
         Alert.alert("Error", "Failed to fetch category details");
       }
     } catch (error: any) {
-      console.error("❌ [CATEGORY-VIEW] Error opening category view:", error);
+      console.error("❌ [SEE-ALL-CATEGORY-VIEW] Error opening category view:", error);
       Alert.alert("Error", "Failed to open category details");
     }
   }, [token]);
 
   const handleBestSellerView = useCallback(async (item: Item) => {
     try {
-      console.log("🔍 [BEST-SELLER-VIEW] Starting view for best seller:", item);
+      console.log("🔍 [SEE-ALL-VIEW] Starting view for best seller:", item);
       const response = await apiConnector.getItemById(item.id, token);
-      console.log("🔍 [BEST-SELLER-VIEW] API response:", response);
+      console.log("🔍 [SEE-ALL-VIEW] API response:", response);
       
       if (response.success) {
         const itemData = response.data;
-        console.log("🔍 [BEST-SELLER-VIEW] Item data from API:", itemData);
+        console.log("🔍 [SEE-ALL-VIEW] Item data from API:", itemData);
         
         // Transform API data to match ItemData interface
         const viewItemData: ItemData = {
@@ -1343,26 +901,26 @@ const FoodDeliveryApp: React.FC = React.memo(() => {
           isVegetarian: itemData.isVegetarian || false
         };
         
-        console.log("🔍 [BEST-SELLER-VIEW] Transformed view data:", viewItemData);
-        console.log("🔍 [BEST-SELLER-VIEW] Setting viewing item and opening modal");
+        console.log("🔍 [SEE-ALL-VIEW] Transformed view data:", viewItemData);
+        console.log("🔍 [SEE-ALL-VIEW] Setting viewing item and opening modal");
         
         setViewingItem(viewItemData);
         setShowViewItemModal(true);
         
-        console.log("🔍 [BEST-SELLER-VIEW] Modal state should be updated");
+        console.log("🔍 [SEE-ALL-VIEW] Modal state should be updated");
       } else {
-        console.log("❌ [BEST-SELLER-VIEW] API response failed:", response);
+        console.log("❌ [SEE-ALL-VIEW] API response failed:", response);
         Alert.alert("Error", "Failed to fetch best seller details");
       }
     } catch (error: any) {
-      console.log("❌ [BEST-SELLER-VIEW] Error occurred:", error);
+      console.log("❌ [SEE-ALL-VIEW] Error occurred:", error);
       Alert.alert("Error", "Failed to fetch best seller details");
     }
   }, [token]);
 
   const handleOfferView = useCallback(async (offer: Offer) => {
     try {
-      console.log("🔍 [OFFER-VIEW] Opening offer view for:", offer.id);
+      console.log("🔍 [SEE-ALL-OFFER-VIEW] Opening offer view for:", offer.id);
       
       const offerId = offer._id || offer.id;
       if (!offerId) {
@@ -1393,7 +951,7 @@ const FoodDeliveryApp: React.FC = React.memo(() => {
           termsAndConditions: offerData.termsAndConditions || "",
         };
         
-        console.log("🔍 [OFFER-VIEW] Transformed data:", transformedData);
+        console.log("🔍 [SEE-ALL-OFFER-VIEW] Transformed data:", transformedData);
         
         setViewingOffer(transformedData);
         setShowViewOfferModal(true);
@@ -1401,7 +959,7 @@ const FoodDeliveryApp: React.FC = React.memo(() => {
         Alert.alert("Error", "Failed to fetch offer details");
       }
     } catch (error: any) {
-      console.error("❌ [OFFER-VIEW] Error opening offer view:", error);
+      console.error("❌ [SEE-ALL-OFFER-VIEW] Error opening offer view:", error);
       Alert.alert("Error", "Failed to open offer details");
     }
   }, [token]);
@@ -1415,7 +973,7 @@ const FoodDeliveryApp: React.FC = React.memo(() => {
 
   const handleCategoryEdit = useCallback((category: Category) => {
     try {
-      console.log("✏️ [CATEGORY-EDIT] Opening category edit for:", category.id);
+      console.log("✏️ [SEE-ALL-CATEGORY-EDIT] Opening category edit for:", category.id);
       
       // Transform category data to match CategoryData interface
       const categoryData: CategoryData = {
@@ -1428,7 +986,7 @@ const FoodDeliveryApp: React.FC = React.memo(() => {
       setEditingCategory(categoryData);
       setShowEditCategoryModal(true);
     } catch (error) {
-      console.error("❌ [CATEGORY-EDIT] Error opening category edit:", error);
+      console.error("❌ [SEE-ALL-CATEGORY-EDIT] Error opening category edit:", error);
       Alert.alert("Error", "Failed to open category editor");
     }
   }, []);
@@ -1441,7 +999,7 @@ const FoodDeliveryApp: React.FC = React.memo(() => {
 
   const handleOfferEdit = useCallback(async (offer: Offer) => {
     try {
-      console.log("✏️ [OFFER-EDIT] Opening offer edit for:", offer.id);
+      console.log("✏️ [SEE-ALL-OFFER-EDIT] Opening offer edit for:", offer.id);
       
       const offerId = offer._id || offer.id;
       if (!offerId) {
@@ -1474,7 +1032,7 @@ const FoodDeliveryApp: React.FC = React.memo(() => {
           termsAndConditions: offerData.termsAndConditions || "",
         };
         
-        console.log("✏️ [OFFER-EDIT] Transformed data:", transformedData);
+        console.log("✏️ [SEE-ALL-OFFER-EDIT] Transformed data:", transformedData);
         
         setEditingOffer(transformedData);
         setShowEditOfferModal(true);
@@ -1482,7 +1040,7 @@ const FoodDeliveryApp: React.FC = React.memo(() => {
         Alert.alert("Error", "Failed to fetch offer details for editing");
       }
     } catch (error) {
-      console.error("❌ [OFFER-EDIT] Error opening offer edit:", error);
+      console.error("❌ [SEE-ALL-OFFER-EDIT] Error opening offer edit:", error);
       Alert.alert("Error", "Failed to open offer editor");
     }
   }, [token]);
@@ -1502,7 +1060,6 @@ const FoodDeliveryApp: React.FC = React.memo(() => {
               const response = await apiConnector.deleteItem(item.id, token);
               if (response.success) {
                 setItems(prev => prev.filter(i => i.id !== item.id));
-                setFilteredItems(prev => prev.filter(i => i.id !== item.id));
                 setSelectedItemId(null);
                 Alert.alert("Success", `Item "${item.name}" deleted successfully`);
               } else {
@@ -1560,7 +1117,6 @@ const FoodDeliveryApp: React.FC = React.memo(() => {
               if (response.success) {
                 setBestSellers(prev => prev.filter(i => i.id !== item.id));
                 setItems(prev => prev.filter(i => i.id !== item.id));
-                setFilteredItems(prev => prev.filter(i => i.id !== item.id));
                 setSelectedBestSellerId(null);
                 Alert.alert("Success", `Best seller "${item.name}" deleted successfully`);
               } else {
@@ -1608,220 +1164,228 @@ const FoodDeliveryApp: React.FC = React.memo(() => {
     );
   }, [token]);
 
-  const handleSaveOffer = useCallback(async (offerData: OfferData): Promise<void> => {
-    if (!user || !token) {
-      Alert.alert("Error", "Please login to create offers");
-      return;
+  // Render content based on active tab
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'items':
+        return (
+          <View style={styles.section}>
+            {isLoadingItems ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="small" color="#ff6b35" />
+                <Text style={styles.loadingText}>Loading items...</Text>
+              </View>
+            ) : filteredItems.length > 0 ? (
+              <View style={styles.gridContainer}>
+                {filteredItems.map((item) => (
+                  <View key={item.id} style={styles.cardWrapper}>
+                    <ItemCard 
+                      item={item} 
+                      isSelected={selectedItemId === item.id}
+                      onSelect={() => handleItemSelect(item.id)}
+                      onView={() => handleItemView(item)}
+                      onEdit={() => handleItemEdit(item)}
+                      onDelete={() => handleItemDelete(item)}
+                    />
+                  </View>
+                ))}
+              </View>
+            ) : (
+              <View style={styles.noDataContainer}>
+                <Text style={styles.noDataText}>No items found.</Text>
+                <Text style={styles.noDataSubtext}>Try adjusting your search or add new items.</Text>
+              </View>
+            )}
+          </View>
+        );
+
+      case 'categories':
+        return (
+          <View style={styles.section}>
+            {isLoadingCategories ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="small" color="#ff6b35" />
+                <Text style={styles.loadingText}>Loading categories...</Text>
+              </View>
+            ) : filteredCategories.length > 0 ? (
+              <View style={styles.gridContainer}>
+                {filteredCategories.map((category) => (
+                  <View key={category.id} style={styles.cardWrapper}>
+                    <CategoryCard 
+                      category={category}
+                      isSelected={selectedCategoryId === category.id}
+                      onSelect={() => handleCategorySelect(category.id)}
+                      onView={() => handleCategoryView(category)}
+                      onEdit={() => handleCategoryEdit(category)}
+                      onDelete={() => handleCategoryDelete(category)}
+                    />
+                  </View>
+                ))}
+              </View>
+            ) : (
+              <View style={styles.noDataContainer}>
+                <Text style={styles.noDataText}>No categories found.</Text>
+                <Text style={styles.noDataSubtext}>Try adjusting your search or add new categories.</Text>
+              </View>
+            )}
+          </View>
+        );
+
+      case 'bestSellers':
+        return (
+          <View style={styles.section}>
+            {isLoadingBestSellers ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="small" color="#ff6b35" />
+                <Text style={styles.loadingText}>Loading best sellers...</Text>
+              </View>
+            ) : filteredBestSellers.length > 0 ? (
+              <View style={styles.gridContainer}>
+                {filteredBestSellers.map((item) => (
+                  <View key={item.id} style={styles.cardWrapper}>
+                    <BestSellerCard 
+                      item={item}
+                      isSelected={selectedBestSellerId === item.id}
+                      onSelect={() => handleBestSellerSelect(item.id)}
+                      onView={() => handleBestSellerView(item)}
+                      onEdit={() => handleBestSellerEdit(item)}
+                      onDelete={() => handleBestSellerDelete(item)}
+                    />
+                  </View>
+                ))}
+              </View>
+            ) : (
+              <View style={styles.noDataContainer}>
+                <Text style={styles.noDataText}>No best sellers found.</Text>
+                <Text style={styles.noDataSubtext}>Items will appear here based on order volume.</Text>
+              </View>
+            )}
+          </View>
+        );
+
+      case 'offers':
+        return (
+          <View style={styles.section}>
+            {isLoadingOffers ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="small" color="#ff6b35" />
+                <Text style={styles.loadingText}>Loading offers...</Text>
+              </View>
+            ) : filteredOffers.length > 0 ? (
+              <View style={styles.gridContainer}>
+                {filteredOffers.map((offer) => (
+                  <View key={offer._id || offer.id} style={styles.cardWrapper}>
+                    <OfferCard 
+                      offer={offer}
+                      isSelected={selectedOfferId === (offer._id || offer.id)}
+                      onSelect={() => handleOfferSelect(offer._id || offer.id || '')}
+                      onView={() => handleOfferView(offer)}
+                      onEdit={() => handleOfferEdit(offer)}
+                      onDelete={() => handleOfferDelete(offer)}
+                    />
+                  </View>
+                ))}
+              </View>
+            ) : (
+              <View style={styles.noDataContainer}>
+                <Text style={styles.noDataText}>No offers found.</Text>
+                <Text style={styles.noDataSubtext}>Try adjusting your search or add new offers.</Text>
+              </View>
+            )}
+          </View>
+        );
+
+      default:
+        return null;
     }
-
-    setIsCreatingOffer(true);
-    try {
-      const apiData = {
-        offerTitle: offerData.title,
-        offerDescription: offerData.description,
-        discountType: offerData.discountType,
-        discountValue: parseFloat(offerData.discountValue),
-        minOrderValue: parseFloat(offerData.minOrderValue),
-        maxDiscountAmount: offerData.maxDiscountAmount ? parseFloat(offerData.maxDiscountAmount) : null,
-        usageLimit: offerData.usageLimit ? parseInt(offerData.usageLimit) : null,
-        usagePerUser: parseInt(offerData.usagePerUser),
-        validFrom: offerData.validFrom,
-        validTo: offerData.validTo,
-        isActive: offerData.isActive,
-        applicableCategories: offerData.applicableCategories,
-        applicableItems: offerData.applicableItems,
-        termsAndConditions: offerData.termsAndConditions,
-      };
-
-      let response;
-      if (offerData.image && 
-          !offerData.image.includes('unsplash.com') && 
-          !offerData.image.includes('default')) {
-        const formData = new FormData();
-        formData.append('offerTitle', offerData.title);
-        formData.append('offerDescription', offerData.description);
-        formData.append('discountType', offerData.discountType);
-        formData.append('discountValue', offerData.discountValue);
-        formData.append('minOrderValue', offerData.minOrderValue);
-        if (offerData.maxDiscountAmount) formData.append('maxDiscountAmount', offerData.maxDiscountAmount);
-        if (offerData.usageLimit) formData.append('usageLimit', offerData.usageLimit);
-        formData.append('usagePerUser', offerData.usagePerUser);
-        formData.append('validFrom', offerData.validFrom);
-        formData.append('validTo', offerData.validTo);
-        formData.append('isActive', offerData.isActive.toString());
-        formData.append('termsAndConditions', offerData.termsAndConditions);
-        
-        const imageFile = {
-          uri: offerData.image,
-          type: 'image/jpeg',
-          name: 'offer_image.jpg'
-        } as any;
-        
-        formData.append('offerImage', imageFile);
-        response = await apiConnector.createOfferWithImage(formData, token);
-      } else {
-        response = await apiConnector.createOffer(apiData, token);
-      }
-
-      if (response.success && response.data) {
-        const newOffer: Offer = {
-          id: response.data._id || response.data.id,
-          offerTitle: response.data.offerTitle,
-          discountAmount: response.data.discountValue || response.data.discountAmount,
-          offerImage: response.data.offerImage || response.data.image || "",
-          startDate: response.data.validFrom || response.data.startDate,
-          endDate: response.data.validTo || response.data.endDate,
-          isActive: response.data.isActive !== false
-        };
-        
-        setOffers(prev => [...prev, newOffer]);
-        setShowOfferModal(false);
-        Alert.alert("Success", "Offer created successfully!");
-      } else {
-        Alert.alert("Error", response.message || "Failed to create offer");
-      }
-    } catch (error: any) {
-      Alert.alert("Error", "Failed to create offer. Please try again.");
-    } finally {
-      setIsCreatingOffer(false);
-    }
-  }, [user, token]);
-
-  // Show SeeAllPage if modal is open
-  if (showSeeAllPage) {
-    return (
-      <SeeAllPage
-        initialTab={seeAllPageTab}
-        onBack={() => setShowSeeAllPage(false)}
-      />
-    );
-  }
+  };
 
   return (
     <PaperProvider>
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+        {/* Header */}
+        <View style={styles.offersHeader}>
+          <TouchableOpacity onPress={onBack} style={styles.backButton}>
+            <Icon source="arrow-left" size={24} color="#800080" />
+          </TouchableOpacity>
+          <Text style={styles.offersTitle}>All {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}</Text>
+          <View style={{ width: 24 }} />
+        </View>
+
+        {/* Search Bar */}
         <View style={styles.searchContainer}>
           <View style={styles.searchBar}>
             <View style={styles.searchIconContainer}>
               <Icon source="magnify" size={20} color="#800080" />
             </View>
             <TextInput
-              placeholder="Search Items"
+              placeholder={`Search ${activeTab}...`}
               placeholderTextColor="#696969"
               value={searchQuery}
-              onChangeText={handleSearch}
+              onChangeText={setSearchQuery}
               style={styles.searchInput}
             />
           </View>
         </View>
 
-        <ItemsSection
-          onAddItem={handleAddItem}
-          onSeeAllItems={handleSeeAllItems}
-          items={searchQuery ? filteredItems : items}
-          isLoading={isLoadingItems}
-          selectedItemId={selectedItemId}
-          onItemSelect={handleItemSelect}
-          onItemView={handleItemView}
-          onItemEdit={handleItemEdit}
-          onItemDelete={handleItemDelete}
-        />
+        {/* Tab Selector */}
+        <View style={styles.tabContainer}>
+          <SegmentedButtons
+            value={activeTab}
+            onValueChange={setActiveTab}
+            buttons={[
+              { value: 'items', label: 'Items' },
+              { value: 'categories', label: 'Categories' },
+              { value: 'bestSellers', label: 'Best Sellers' },
+              { value: 'offers', label: 'Offers' },
+            ]}
+            style={styles.segmentedButtons}
+          />
+        </View>
 
-        <CategoriesSection
-          categories={categories}
-          onCategoryPress={handleCategoryPress}
-          onAddCategory={handleAddCategory}
-          onSeeAllCategories={handleSeeAllCategories}
-          isLoading={isLoadingCategories}
-          selectedCategoryId={selectedCategoryId}
-          onCategorySelect={handleCategorySelect}
-          onCategoryView={handleCategoryView}
-          onCategoryEdit={handleCategoryEdit}
-          onCategoryDelete={handleCategoryDelete}
-        />
+        {/* Content */}
+        {renderContent()}
 
-        <BestSellerSection
-          bestSellers={bestSellers}
-          onSeeAll={handleSeeAllBestSellers}
-          isLoading={isLoadingBestSellers}
-          selectedBestSellerId={selectedBestSellerId}
-          onBestSellerSelect={handleBestSellerSelect}
-          onBestSellerView={handleBestSellerView}
-          onBestSellerEdit={handleBestSellerEdit}
-          onBestSellerDelete={handleBestSellerDelete}
-        />
-
-        <OffersSection
-          onAddOffer={handleAddOffer}
-          onSeeAllOffers={handleSeeAllOffers}
-          offers={offers}
-          isLoading={isLoadingOffers}
-          selectedOfferId={selectedOfferId}
-          onOfferSelect={handleOfferSelect}
-          onOfferView={handleOfferView}
-          onOfferEdit={handleOfferEdit}
-          onOfferDelete={handleOfferDelete}
-        />
-
-        <AddOfferModal
-          visible={showOfferModal}
-          onDismiss={() => setShowOfferModal(false)}
-          onSave={handleSaveOffer}
-          isLoading={isCreatingOffer}
-        />
-        
-        <AddItemModal
-          visible={showItemModal}
-          onDismiss={() => setShowItemModal(false)}
-          onSave={handleSaveItem}
-          isLoading={isCreatingItem}
-          categories={categories}
-        />
-        
-        <AddCategoryModal
-          visible={showCategoryModal}
-          onDismiss={() => setShowCategoryModal(false)}
-          onSave={handleSaveCategory}
-          isLoading={isCreatingCategory}
-        />
-
-        <AddItemModal
-          visible={showEditItemModal}
-          onDismiss={() => {
-            setShowEditItemModal(false);
-            setEditingItem(null);
-          }}
-          onSave={handleSaveItem}
-          onUpdate={handleUpdateItem}
-          isLoading={isCreatingItem}
-          categories={categories}
-          editItem={editingItem}
-          isEditMode={true}
-        />
-
+        {/* View Item Modal */}
         <AddItemModal
           visible={showViewItemModal}
           onDismiss={() => {
-            console.log("🔍 [VIEW] Modal dismissed");
+            console.log("🔍 [SEE-ALL-VIEW] Modal dismissed");
             setShowViewItemModal(false);
             setViewingItem(null);
           }}
-          onSave={handleSaveItem}
+          onSave={() => {}} // Not used in view mode
           isLoading={false}
           categories={categories}
           editItem={viewingItem}
           isViewMode={true}
         />
 
+        {/* Edit Item Modal */}
+        <AddItemModal
+          visible={showEditItemModal}
+          onDismiss={() => {
+            console.log("🔍 [SEE-ALL-EDIT] Modal dismissed");
+            setShowEditItemModal(false);
+            setEditingItem(null);
+          }}
+          onSave={() => {}} // Not used in edit mode
+          onUpdate={handleUpdateItem}
+          isLoading={isUpdatingItem}
+          categories={categories}
+          editItem={editingItem}
+          isEditMode={true}
+        />
+
         {/* Category Modals */}
         <AddCategoryModal
           visible={showViewCategoryModal}
           onDismiss={() => {
-            console.log("🔍 [CATEGORY-VIEW] Modal dismissed");
+            console.log("🔍 [SEE-ALL-CATEGORY-VIEW] Modal dismissed");
             setShowViewCategoryModal(false);
             setViewingCategory(null);
           }}
-          onSave={handleSaveCategory}
+          onSave={() => {}} // Not used in view mode
           isLoading={false}
           editCategory={viewingCategory}
           isViewMode={true}
@@ -1830,12 +1394,13 @@ const FoodDeliveryApp: React.FC = React.memo(() => {
         <AddCategoryModal
           visible={showEditCategoryModal}
           onDismiss={() => {
+            console.log("🔍 [SEE-ALL-CATEGORY-EDIT] Modal dismissed");
             setShowEditCategoryModal(false);
             setEditingCategory(null);
           }}
-          onSave={handleSaveCategory}
+          onSave={() => {}} // Not used in edit mode
           onUpdate={handleUpdateCategory}
-          isLoading={isCreatingCategory}
+          isLoading={isUpdatingCategory}
           editCategory={editingCategory}
           isEditMode={true}
         />
@@ -1844,11 +1409,11 @@ const FoodDeliveryApp: React.FC = React.memo(() => {
         <AddOfferModal
           visible={showViewOfferModal}
           onDismiss={() => {
-            console.log("🔍 [OFFER-VIEW] Modal dismissed");
+            console.log("🔍 [SEE-ALL-OFFER-VIEW] Modal dismissed");
             setShowViewOfferModal(false);
             setViewingOffer(null);
           }}
-          onSave={handleSaveOffer}
+          onSave={() => {}} // Not used in view mode
           isLoading={false}
           editOffer={viewingOffer}
           isViewMode={true}
@@ -1857,10 +1422,11 @@ const FoodDeliveryApp: React.FC = React.memo(() => {
         <AddOfferModal
           visible={showEditOfferModal}
           onDismiss={() => {
+            console.log("🔍 [SEE-ALL-OFFER-EDIT] Modal dismissed");
             setShowEditOfferModal(false);
             setEditingOffer(null);
           }}
-          onSave={handleSaveOffer}
+          onSave={() => {}} // Not used in edit mode
           onUpdate={handleUpdateOffer}
           isLoading={isUpdatingOffer}
           editOffer={editingOffer}
@@ -1869,8 +1435,6 @@ const FoodDeliveryApp: React.FC = React.memo(() => {
       </ScrollView>
     </PaperProvider>
   );
-});
+};
 
-FoodDeliveryApp.displayName = "FoodDeliveryApp";
-
-export default FoodDeliveryApp;
+export default SeeAllPage;

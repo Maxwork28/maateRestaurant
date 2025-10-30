@@ -190,19 +190,19 @@ Error: ${authError || 'None'}`,
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       style={styles.container}
     >
-      <Appbar.Header style={{ backgroundColor: "#fff", elevation: 0 }}>
+      <Appbar.Header style={{ backgroundColor: "#FDF7F1", elevation: 0 }}>
         <Appbar.BackAction
           onPress={() => router.push("/(auth)" as any)}
-          color="#FA4A0C"
+          color="#6F32AB"
         />
         <Appbar.Content
           title="Verification"
-          titleStyle={{ color: "#FA4A0C" }}
+          titleStyle={{ color: "#6F32AB" }}
         />
         <Appbar.Action 
           icon="bug" 
           onPress={showReduxState}
-          color="#FA4A0C"
+          color="#6F32AB"
         />
       </Appbar.Header>
 
@@ -221,7 +221,7 @@ Error: ${authError || 'None'}`,
               onChangeText={(text) => handleChange(text, index)}
               placeholder=""
               textAlign="center"
-              selectionColor="#FA4A0C"
+              selectionColor="#6F32AB"
             />
           ))}
         </View>
@@ -242,7 +242,7 @@ Error: ${authError || 'None'}`,
               style={[
                 styles.resendText,
                 { 
-                  color: timer === 0 && !isResending ? "#FA4A0C" : "#CCCCCC" 
+                  color: timer === 0 && !isResending ? "#6F32AB" : "#CCCCCC" 
                 },
               ]}
             >
@@ -272,7 +272,7 @@ Error: ${authError || 'None'}`,
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#FDF7F1",
   },
   content: {
     paddingHorizontal: 30,
@@ -281,8 +281,9 @@ const styles = StyleSheet.create({
   },
   otpInfo: {
     fontSize: 16,
-    color: "#333",
+    color: "#434140",
     marginBottom: 30,
+    fontWeight: "500",
   },
   otpInputs: {
     flexDirection: "row",
@@ -294,22 +295,25 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderWidth: 1,
-    borderColor: "#DDDDDD",
-    borderRadius: 8,
+    borderColor: "#E0E0E0",
+    borderRadius: 12,
     fontSize: 18,
+    backgroundColor: "#FDF7F1",
+    color: "#434140",
   },
   timerContainer: {
     alignItems: "center",
   },
   timerText: {
     fontSize: 14,
-    color: "#666",
+    color: "#434140",
     marginBottom: 4,
+    fontWeight: "500",
   },
   timerCountdown: {
     fontSize: 16,
-    fontWeight: "600",
-    color: "#000",
+    fontWeight: "bold",
+    color: "#434140",
     marginBottom: 4,
   },
   resendText: {
@@ -323,15 +327,15 @@ const styles = StyleSheet.create({
   },
   confirmButton: {
     borderRadius: 25,
-    backgroundColor: "#FA4A0C",
+    backgroundColor: "#6F32AB",
   },
   buttonContent: {
     paddingVertical: 12,
   },
   buttonLabel: {
     fontSize: 16,
-    fontWeight: "600",
-    color: "#fff",
+    fontWeight: "bold",
+    color: "#FFFFFF",
   },
 });
 

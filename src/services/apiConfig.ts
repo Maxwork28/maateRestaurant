@@ -9,8 +9,8 @@ export const API_CONFIG = {
   // Base URL - Change this based on your environment
   // For local development, use your local IP address
   // For production, set EXPO_PUBLIC_API_URL environment variable
-  BASE_URL: process.env.EXPO_PUBLIC_API_URL || 'http://18.xxx.xxx.xxx:3001',
-  // BASE_URL: process.env.EXPO_PUBLIC_API_URL || 'http://192.168.1.4:3001',
+  BASE_URL: process.env.EXPO_PUBLIC_API_URL || 'https://api.mangiee.com',
+  // BASE_URL: process.env.EXPO_PUBLIC_API_URL || 'http://192.168.1.7:3001',
 
   // API Version
   API_VERSION: '/api',

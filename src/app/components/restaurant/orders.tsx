@@ -97,22 +97,17 @@ const OrderTracking = () => {
       const response = await apiConnector.updateOrderStatus(orderId, newStatus, token);
       
       if (response.success) {
-        // Update the order in the local state
-        setOrders(prev => prev.map(order => 
-          order._id === orderId 
-            ? { ...order, status: newStatus }
-            : order
-        ));
+        // Remove the order from current tab since its status changed
+        setOrders(prev => prev.filter(order => order._id !== orderId));
         
-        // Update selected order if it's the one being updated
+        // Clear selected order if it's the one being updated
         if (selectedOrder?._id === orderId) {
-          setSelectedOrder(prev => prev ? { ...prev, status: newStatus } : null);
+          setSelectedOrder(null);
         }
         
         Alert.alert("Success", `Order status updated to ${newStatus}`);
         
-        // Refresh orders to get updated data
-        fetchOrders(activeTab, 1, true);
+        // No need to refresh - the order is already removed from current tab
       } else {
         Alert.alert("Error", response.message || "Failed to update order status");
       }
@@ -136,22 +131,17 @@ const OrderTracking = () => {
       const response = await apiConnector.cancelOrder(orderId, reason, token);
       
       if (response.success) {
-        // Update the order in the local state
-        setOrders(prev => prev.map(order => 
-          order._id === orderId 
-            ? { ...order, status: 'cancelled' }
-            : order
-        ));
+        // Remove the order from current tab since it's now cancelled
+        setOrders(prev => prev.filter(order => order._id !== orderId));
         
-        // Update selected order if it's the one being cancelled
+        // Clear selected order if it's the one being cancelled
         if (selectedOrder?._id === orderId) {
-          setSelectedOrder(prev => prev ? { ...prev, status: 'cancelled' } : null);
+          setSelectedOrder(null);
         }
         
         Alert.alert("Success", "Order cancelled successfully");
         
-        // Refresh orders to get updated data
-        fetchOrders(activeTab, 1, true);
+        // No need to refresh - the order is already removed from current tab
       } else {
         Alert.alert("Error", response.message || "Failed to cancel order");
       }
@@ -284,13 +274,33 @@ const OrderTracking = () => {
         return (
           <View style={{ flexDirection: 'row', gap: 10, marginTop: 10 }}>
             <TouchableOpacity
-              style={{ backgroundColor: '#4CAF50', padding: 8, borderRadius: 5 }}
+              style={{ 
+                backgroundColor: '#4CAF50', 
+                paddingVertical: 12, 
+                paddingHorizontal: 20, 
+                borderRadius: 25,
+                elevation: 2,
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 1 },
+                shadowOpacity: 0.1,
+                shadowRadius: 2,
+              }}
               onPress={() => updateOrderStatus(order._id, 'confirmed')}
             >
-              <Text style={{ color: 'white', textAlign: 'center' }}>Confirm</Text>
+              <Text style={{ color: 'white', textAlign: 'center', fontWeight: 'bold' }}>Confirm</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={{ backgroundColor: '#f44336', padding: 8, borderRadius: 5 }}
+              style={{ 
+                backgroundColor: '#f44336', 
+                paddingVertical: 12, 
+                paddingHorizontal: 20, 
+                borderRadius: 25,
+                elevation: 2,
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 1 },
+                shadowOpacity: 0.1,
+                shadowRadius: 2,
+              }}
               onPress={() => {
                 Alert.prompt(
                   "Cancel Order",
@@ -303,35 +313,68 @@ const OrderTracking = () => {
                 );
               }}
             >
-              <Text style={{ color: 'white', textAlign: 'center' }}>Cancel</Text>
+              <Text style={{ color: 'white', textAlign: 'center', fontWeight: 'bold' }}>Cancel</Text>
             </TouchableOpacity>
           </View>
         );
       case 'confirmed':
         return (
           <TouchableOpacity
-            style={{ backgroundColor: '#2196F3', padding: 8, borderRadius: 5, marginTop: 10 }}
+            style={{ 
+              backgroundColor: '#6F32AB', 
+              paddingVertical: 12, 
+              paddingHorizontal: 20, 
+              borderRadius: 25, 
+              marginTop: 10,
+              elevation: 2,
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 1 },
+              shadowOpacity: 0.1,
+              shadowRadius: 2,
+            }}
             onPress={() => updateOrderStatus(order._id, 'preparing')}
           >
-            <Text style={{ color: 'white', textAlign: 'center' }}>Start Preparing</Text>
+            <Text style={{ color: 'white', textAlign: 'center', fontWeight: 'bold' }}>Start Preparing</Text>
           </TouchableOpacity>
         );
       case 'preparing':
         return (
           <TouchableOpacity
-            style={{ backgroundColor: '#FF9800', padding: 8, borderRadius: 5, marginTop: 10 }}
+            style={{ 
+              backgroundColor: '#FF9800', 
+              paddingVertical: 12, 
+              paddingHorizontal: 20, 
+              borderRadius: 25, 
+              marginTop: 10,
+              elevation: 2,
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 1 },
+              shadowOpacity: 0.1,
+              shadowRadius: 2,
+            }}
             onPress={() => updateOrderStatus(order._id, 'ready')}
           >
-            <Text style={{ color: 'white', textAlign: 'center' }}>Mark Ready</Text>
+            <Text style={{ color: 'white', textAlign: 'center', fontWeight: 'bold' }}>Mark Ready</Text>
           </TouchableOpacity>
         );
       case 'ready':
         return (
           <TouchableOpacity
-            style={{ backgroundColor: '#9C27B0', padding: 8, borderRadius: 5, marginTop: 10 }}
+            style={{ 
+              backgroundColor: '#4CAF50', 
+              paddingVertical: 12, 
+              paddingHorizontal: 20, 
+              borderRadius: 25, 
+              marginTop: 10,
+              elevation: 2,
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 1 },
+              shadowOpacity: 0.1,
+              shadowRadius: 2,
+            }}
             onPress={() => updateOrderStatus(order._id, 'delivered')}
           >
-            <Text style={{ color: 'white', textAlign: 'center' }}>Mark Delivered</Text>
+            <Text style={{ color: 'white', textAlign: 'center', fontWeight: 'bold' }}>Mark Delivered</Text>
           </TouchableOpacity>
         );
       default:
@@ -343,16 +386,51 @@ const OrderTracking = () => {
   if (!isAuthenticated || !token) {
     return (
       <View style={styles.container}>
-        <View style={{ padding: 20, alignItems: 'center', justifyContent: 'center', flex: 1 }}>
-          <Text style={{ fontSize: 18, textAlign: 'center', marginBottom: 10 }}>
-            Please login to view orders
-          </Text>
-          <Text style={{ fontSize: 14, textAlign: 'center', color: '#666' }}>
-            You need to be authenticated to access order management
-          </Text>
-          <Text style={{ fontSize: 12, textAlign: 'center', color: '#999', marginTop: 10 }}>
-            Debug: isAuthenticated={String(isAuthenticated)}, token={token ? 'present' : 'missing'}
-          </Text>
+        <View style={{ 
+          padding: 20, 
+          alignItems: 'center', 
+          justifyContent: 'center', 
+          flex: 1,
+          backgroundColor: '#FDF7F1',
+        }}>
+          <View style={{
+            backgroundColor: '#FDF7F1',
+            padding: 24,
+            borderRadius: 16,
+            elevation: 4,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 8,
+            alignItems: 'center',
+          }}>
+            <Text style={{ 
+              fontSize: 18, 
+              textAlign: 'center', 
+              marginBottom: 10, 
+              color: '#434140',
+              fontWeight: 'bold',
+            }}>
+              Please login to view orders
+            </Text>
+            <Text style={{ 
+              fontSize: 14, 
+              textAlign: 'center', 
+              color: '#434140',
+              fontWeight: '500',
+            }}>
+              You need to be authenticated to access order management
+            </Text>
+            <Text style={{ 
+              fontSize: 12, 
+              textAlign: 'center', 
+              color: '#434140', 
+              marginTop: 10,
+              fontWeight: '500',
+            }}>
+              Debug: isAuthenticated={String(isAuthenticated)}, token={token ? 'present' : 'missing'}
+            </Text>
+          </View>
         </View>
       </View>
     );
@@ -374,44 +452,6 @@ const OrderTracking = () => {
         }}
         scrollEventThrottle={400}
       >
-        {/* Debug Info - Remove this in production */}
-        <View style={{ padding: 10, backgroundColor: '#f0f0f0', margin: 10, borderRadius: 5 }}>
-          <Text style={{ fontSize: 12, color: '#666' }}>
-            🔐 Auth: {isAuthenticated ? 'Yes' : 'No'} | 
-            📱 Token: {token ? 'Present' : 'Missing'} | 
-            📦 Orders: {orders.length} | 
-            🏷️ Active Tab: {activeTab}
-          </Text>
-          <Text style={{ fontSize: 10, color: '#999', marginTop: 5 }}>
-            Token Preview: {token ? token.substring(0, 30) + '...' : 'None'}
-          </Text>
-          <TouchableOpacity 
-            style={{ backgroundColor: '#007AFF', padding: 8, borderRadius: 5, marginTop: 5 }}
-            onPress={() => {
-              console.log("🔄 [ORDERS] Manual refresh triggered");
-              if (token && isAuthenticated) {
-                fetchOrders(activeTab, 1, true);
-              } else {
-                Alert.alert("Debug", `Token: ${!!token}, Auth: ${isAuthenticated}`);
-              }
-            }}
-          >
-            <Text style={{ color: 'white', textAlign: 'center', fontSize: 12 }}>
-              🔄 Manual Refresh
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={{ backgroundColor: '#FF6B35', padding: 8, borderRadius: 5, marginTop: 5 }}
-            onPress={() => {
-              console.log("🧪 [ORDERS] Test API call triggered");
-              Alert.alert("Test API", `Token: ${token ? 'Present' : 'Missing'}\nAuth: ${isAuthenticated}\nToken Preview: ${token ? token.substring(0, 50) + '...' : 'None'}`);
-            }}
-          >
-            <Text style={{ color: 'white', textAlign: 'center', fontSize: 12 }}>
-              🧪 Test Auth State
-            </Text>
-          </TouchableOpacity>
-        </View>
 
         <ScrollView 
           horizontal 
@@ -424,8 +464,8 @@ const OrderTracking = () => {
 
         {loading && orders.length === 0 ? (
           <View style={{ padding: 20, alignItems: 'center' }}>
-            <ActivityIndicator size="large" color="#FF4500" />
-            <Text style={{ marginTop: 10 }}>Loading orders...</Text>
+            <ActivityIndicator size="large" color="#6F32AB" />
+            <Text style={{ marginTop: 10, color: '#434140', fontWeight: 'bold' }}>Loading orders...</Text>
           </View>
         ) : (
         <View style={styles.orderList}>
@@ -548,8 +588,8 @@ const OrderTracking = () => {
             {/* Loading indicator for actions */}
             {loading && (
               <View style={{ padding: 10, alignItems: 'center' }}>
-                <ActivityIndicator size="small" color="#FF4500" />
-                <Text style={{ marginTop: 5, fontSize: 12 }}>Processing...</Text>
+                <ActivityIndicator size="small" color="#6F32AB" />
+                <Text style={{ marginTop: 5, fontSize: 12, color: '#434140', fontWeight: 'bold' }}>Processing...</Text>
               </View>
             )}
           </View>
@@ -563,10 +603,23 @@ const OrderTracking = () => {
         {pagination && pagination.hasNextPage && (
           <View style={{ padding: 20, alignItems: 'center' }}>
             {loading ? (
-              <ActivityIndicator size="small" color="#FF4500" />
+              <ActivityIndicator size="small" color="#6F32AB" />
             ) : (
-              <TouchableOpacity onPress={loadMoreOrders}>
-                <Text style={{ color: '#FF4500' }}>Load More Orders</Text>
+              <TouchableOpacity 
+                onPress={loadMoreOrders}
+                style={{
+                  backgroundColor: '#6F32AB',
+                  paddingVertical: 12,
+                  paddingHorizontal: 24,
+                  borderRadius: 25,
+                  elevation: 2,
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 1 },
+                  shadowOpacity: 0.1,
+                  shadowRadius: 2,
+                }}
+              >
+                <Text style={{ color: '#FFFFFF', fontWeight: 'bold' }}>Load More Orders</Text>
               </TouchableOpacity>
             )}
           </View>

@@ -3,7 +3,7 @@ import { StyleSheet } from 'react-native';
 export const showMenuStyles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#FDF7F1',
     paddingHorizontal: 16,
     paddingTop: 12,
   },
@@ -11,7 +11,7 @@ topSection: {
   marginBottom: 20,
 },
 saveButton: {
-  backgroundColor: "#FF5A1F",
+  backgroundColor: "#6F32AB",
   borderRadius: 8,
   paddingVertical: 6,
   justifyContent: "center",
@@ -23,65 +23,82 @@ header: {
   justifyContent: 'space-between',
   alignItems: 'center',
   marginBottom: 12,
+  minHeight: 80,
 },
 
 planText: {
-  fontSize: 16,
-  fontWeight: '600',
-  color: '#DAA520', // gold-ish
+  fontSize: 18,
+  fontWeight: 'bold',
+  color: '#434140',
 },
 
 activeStatus: {
   fontSize: 12,
-  color: 'gray',
+  color: '#434140',
+  fontWeight: '500',
 },
 
 weekRow: {
   flexDirection: 'row',
   justifyContent: 'space-between',
+  alignItems: 'center',
   marginBottom: 16,
+  paddingHorizontal: 8,
 },
 
 weekItem: {
   alignItems: 'center',
+  justifyContent: 'center',
   flex: 1,
+  minHeight: 80,
 },
 
 weekDayText: {
   fontSize: 14,
-  fontWeight: '500',
-  marginBottom: 4,
-  color:'black'
+  fontWeight: '600',
+  marginBottom: 6,
+  color: '#434140',
+  textAlign: 'center',
 },
 
 dateCircle: {
-  width: 36,
-  height: 36,
-  borderRadius: 18,
-  borderWidth: 1,
-  borderColor: '#ccc',
+  width: 40,
+  height: 40,
+  borderRadius: 20,
+  borderWidth: 2,
+  borderColor: '#E0E0E0',
+  backgroundColor: '#FDF7F1',
   justifyContent: 'center',
   alignItems: 'center',
-  color:'black'
+  marginBottom: 4,
+  elevation: 2,
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 1 },
+  shadowOpacity: 0.1,
+  shadowRadius: 2,
 },
 
 dateActive: {
-  borderColor: '#FF4500',
+  borderColor: '#6F32AB',
+  backgroundColor: '#6F32AB',
 },
 
 dateSelected: {
-  borderColor: '#000',
-  borderWidth: 2,
+  borderColor: '#6F32AB',
+  borderWidth: 3,
+  backgroundColor: '#6F32AB',
 },
 
 dateText: {
-  color: '#000',
-  fontWeight: '500',
+  color: '#434140',
+  fontWeight: '600',
+  fontSize: 14,
 },
 
 dateTextSelected: {
-  color: 'black',
-  fontWeight: '600',
+  color: '#FFFFFF',
+  fontWeight: 'bold',
+  fontSize: 14,
 },
 
 tabContainer: {
@@ -93,29 +110,37 @@ tabContainer: {
 },
 
 weekTab: {
-  paddingVertical: 6,
-  paddingHorizontal: 12,
-  borderRadius: 16,
-  backgroundColor: '#fff',
-  borderWidth: 1,
-  borderColor: '#FF4500',
+  paddingVertical: 8,
+  paddingHorizontal: 16,
+  borderRadius: 20,
+  backgroundColor: '#FDF7F1',
+  borderWidth: 2,
+  borderColor: '#6F32AB',
   marginHorizontal: 4,
+  elevation: 2,
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 1 },
+  shadowOpacity: 0.1,
+  shadowRadius: 2,
 },
 
 weekTabActive: {
-  backgroundColor: '#FF4500',
+  backgroundColor: '#6F32AB',
+  borderColor: '#6F32AB',
 },
 
 weekTabText: {
-  color: '#FF4500',
-  fontWeight: '500',
-  fontSize: 13,
+  color: '#6F32AB',
+  fontWeight: '600',
+  fontSize: 12,
+  textAlign: 'center',
 },
 
 weekTabTextActive: {
-  color: '#fff',
-  fontWeight: '600',
-  fontSize: 13,
+  color: '#FFFFFF',
+  fontWeight: 'bold',
+  fontSize: 12,
+  textAlign: 'center',
 },
 
 
@@ -132,47 +157,78 @@ weekTabTextActive: {
 matrixContainer: {
   marginTop: 16,
   paddingHorizontal: 10,
+  minWidth: 600, // Ensure minimum width for horizontal scrolling
+  backgroundColor: '#FDF7F1',
+  borderRadius: 16,
+  padding: 16,
+  elevation: 4,
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.1,
+  shadowRadius: 8,
 },
 
 matrixRow: {
   flexDirection: 'row',
-  alignItems: 'flex-start',
+  alignItems: 'center',
   borderBottomWidth: 1,
-  borderColor: '#ddd',
-  paddingVertical: 8,
+  borderColor: '#E0E0E0',
+  paddingVertical: 16,
+  minHeight: 70,
+  minWidth: 600, // Ensure minimum width for horizontal scrolling
 },
 
 matrixHeader: {
-  flex: 1,
+  width: 150, // Fixed width instead of flex
   fontWeight: 'bold',
-  fontSize: 14,
+  fontSize: 16,
   textAlign: 'center',
-   color:'#FF4500'
+  color: '#6F32AB',
+  paddingHorizontal: 8,
+  textTransform: 'uppercase',
+  letterSpacing: 0.5,
 },
 matrixHeaderlabel: {
-  flex: 1,
+  width: 100, // Fixed width for day column
   fontWeight: 'bold',
-  fontSize: 14,
+  fontSize: 16,
   textAlign: 'center',
+  color: '#434140',
+  paddingHorizontal: 8,
+  textTransform: 'uppercase',
+  letterSpacing: 0.5,
 },
 mealType: {
-  flex: 1,
-  fontWeight: '600',
-  fontSize: 14,
+  width: 100, // Fixed width to match header
+  fontWeight: 'bold',
+  fontSize: 16,
   textAlign: 'left',
-   color:'#FF4500'
+  color: '#6F32AB',
+  paddingHorizontal: 8,
 },
 
 mealCell: {
-  flex: 1,
+  width: 150, // Fixed width to match header
   alignItems: 'center',
-  paddingHorizontal: 4,
+  justifyContent: 'center',
+  paddingHorizontal: 8,
+  minHeight: 60,
+  backgroundColor: '#FFFFFF',
+  borderRadius: 12,
+  marginHorizontal: 4,
+  elevation: 2,
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 1 },
+  shadowOpacity: 0.1,
+  shadowRadius: 2,
 },
 
 mealName: {
   fontWeight: '600',
-  fontSize: 13,
-  color:"black"
+  fontSize: 14,
+  color: '#434140',
+  textAlign: 'center',
+  marginBottom: 4,
 },
 
 mealDesc: {
@@ -181,8 +237,10 @@ mealDesc: {
 },
 
 mealCal: {
-  fontSize: 11,
-  color: '#888',
+  fontSize: 12,
+  color: '#6F32AB',
+  textAlign: 'center',
+  fontWeight: '500',
 },
  modalOverlay: {
     flex: 1,

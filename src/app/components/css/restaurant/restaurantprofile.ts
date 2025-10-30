@@ -3,14 +3,16 @@ import { StyleSheet } from 'react-native';
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#FDF7F1',
   },
   surface: {
-    margin: 16,
-    padding: 16,
-    borderRadius: 12,
-    backgroundColor: '#fff',
-    elevation: 2,
+    marginHorizontal: 0,
+    paddingLeft: 24, // Increased left padding to shift content right
+    paddingRight: 16, // Keep right padding as is
+    paddingVertical: 16,
+    borderRadius: 0,
+    backgroundColor: 'transparent',
+    elevation: 0,
   },
   header: {
     flexDirection: 'row',
@@ -23,12 +25,14 @@ export const styles = StyleSheet.create({
   },
   avatar: {
     backgroundColor: '#9e9e9e',
+    borderWidth: 3,
+    borderColor: '#FF8C00',
   },
   cameraIcon: {
     position: 'absolute',
     bottom: -5,
     right: -5,
-    backgroundColor: '#ff5722',
+    backgroundColor: '#8A2BE2',
     width: 28,
     height: 28,
   },
@@ -52,6 +56,7 @@ export const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     gap: 12,
+    marginBottom: 16,
   },
   fullWidth: {
     flex: 1,
@@ -64,34 +69,55 @@ export const styles = StyleSheet.create({
   },
   label: {
     fontSize: 14,
-    color: '#333',
+    color: '#333333',
     marginBottom: 8,
-    fontWeight: '500',
+    fontWeight: '400',
   },
   input: {
-    backgroundColor: '#fff',
+    backgroundColor: '#FFFBF7',
     fontSize: 14,
+    borderRadius: 15,
+    paddingRight: 8,
+    paddingLeft: 8,
+    height: 48, // Explicitly set height to match uploadButton
+    justifyContent: 'center', // Center text vertically
+  },
+  dateInput: {
+    backgroundColor: '#FFFBF7',
+    fontSize: 14,
+    borderRadius: 15,
+    paddingRight: 4, // Reduced padding to bring icon closer to text
+    paddingLeft: 0, // Balanced left padding for proper text visibility
+    height: 48,
+    justifyContent: 'center',
+    textAlign: 'left', // Ensure text is left-aligned
   },
   focusedInput: {
-    backgroundColor: '#fff',
+    backgroundColor: '#FFFBF7',
   },
   inputOutline: {
-    borderColor: '#e0e0e0',
+    borderColor: '#CCCCCC',
     borderWidth: 1,
+    borderRadius: 15,
   },
   focusedOutline: {
-    borderColor: '#ff5722',
-    borderWidth: 2,
+    borderColor: '#8A2BE2',
+    borderWidth: 1,
+    borderRadius: 15,
   },
   uploadButton: {
-    borderColor: '#e0e0e0',
+    borderColor: '#CCCCCC',
     borderWidth: 1,
-    backgroundColor: '#f9f9f9',
-    marginTop: 8,
+    backgroundColor: '#FFFBF7',
+    borderRadius: 15,
+    paddingRight: 8,
+    paddingLeft: 8,
+    height: 48,
+    justifyContent: 'center',
   },
   uploadButtonText: {
-    color: '#666',
-    fontSize: 12,
+    color: '#333333',
+    fontSize: 14,
   },
   radioContainer: {
     flexDirection: 'row',
@@ -107,22 +133,26 @@ export const styles = StyleSheet.create({
   menuScrollView: {
     maxHeight: 200,
   },
-   qrSection: {
+  qrSection: {
+    flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 20,
+    gap: 16,
   },
   qrContainer: {
     alignItems: 'center',
   },
   qrIcon: {
-    backgroundColor: '#fff2f0',
+    backgroundColor: '#FF8C00',
     margin: 0,
+    borderRadius: 50,
+    width: 100,
+    height: 100,
   },
   qrText: {
-    marginTop: 8,
-    fontSize: 14,
-    color: '#ff5722',
-    fontWeight: '500',
+    fontSize: 16,
+    color: '#333333',
+    fontWeight: '600',
   },
   sectionTitle: {
     fontSize: 18,
@@ -148,150 +178,152 @@ export const styles = StyleSheet.create({
     paddingVertical: 16,
   },
   saveProfileButton: {
-    backgroundColor: '#ff5722',
-    borderRadius: 25,
-    paddingVertical: 8,
+    backgroundColor: '#8A2BE2',
+    borderRadius: 15,
+    paddingVertical: 12,
+    paddingRight: 8,
+    paddingLeft: 8,
   },
   saveProfileButtonText: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '600',
     color: '#fff',
   },
   qrImageContainer: {
     alignItems: 'center',
   },
-   qrUploadedText: {
+  qrUploadedText: {
     marginTop: 8,
     fontSize: 14,
     color: '#4CAF50',
     fontWeight: '500',
   },
   // Updated styles for iOS DatePicker
-modalOverlay: {
-  flex: 1,
-  justifyContent: 'flex-end',
-  backgroundColor: 'rgba(0, 0, 0, 0.5)',
-},
-iosDatePickerContainer: {
-  backgroundColor: '#fff',
-  borderTopLeftRadius: 20,
-  borderTopRightRadius: 20,
-  paddingBottom: 20,
-},
-iosDatePickerHeader: {
-  flexDirection: 'row',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  paddingHorizontal: 20,
-  paddingVertical: 15,
-  borderBottomWidth: 1,
-  borderBottomColor: '#e0e0e0',
-},
-iosDatePickerButton: {
-  paddingHorizontal: 15,
-  paddingVertical: 8,
-},
-iosDatePickerButtonText: {
-  fontSize: 16,
-  color: '#007AFF',
-},
-iosDatePickerDoneText: {
-  fontWeight: '600',
-},
-iosDatePickerTitle: {
-  fontSize: 16,
-  fontWeight: '600',
-  color: '#000',
-},
-iosDatePicker: {
-  backgroundColor: '#fff',
-  height: 200,
-},
-// Image display styles
-imageSection: {
-  marginTop: 16,
-  marginBottom: 8,
-},
-imageLabel: {
-  fontSize: 14,
-  color: '#333',
-  marginBottom: 8,
-  fontWeight: '500',
-},
-imageRow: {
-  flexDirection: 'row',
-  flexWrap: 'wrap',
-  gap: 12,
-  marginTop: 8,
-},
-imageContainer: {
-  alignItems: 'center',
-  marginBottom: 8,
-},
-thumbnail: {
-  width: 80,
-  height: 80,
-  borderRadius: 8,
-  borderWidth: 1,
-  borderColor: '#e0e0e0',
-},
-imageIndex: {
-  fontSize: 12,
-  color: '#666',
-  marginTop: 4,
-  textAlign: 'center',
-},
-// Image modal styles
-imageModalOverlay: {
-  flex: 1,
-  justifyContent: 'center',
-  alignItems: 'center',
-  backgroundColor: 'rgba(0, 0, 0, 0.8)',
-},
-imageModalContainer: {
-  backgroundColor: '#fff',
-  borderRadius: 12,
-  padding: 20,
-  margin: 20,
-  maxWidth: '90%',
-  maxHeight: '80%',
-},
-fullImage: {
-  width: 300,
-  height: 300,
-  borderRadius: 8,
-},
-closeImageModalButton: {
-  position: 'absolute',
-  top: -10,
-  right: -10,
-  backgroundColor: '#ff5722',
-},
-// Remove button styles
-removeButton: {
-  backgroundColor: '#ff4444',
-  paddingHorizontal: 8,
-  paddingVertical: 4,
-  borderRadius: 4,
-  marginTop: 4,
-},
-removeButtonText: {
-  color: '#fff',
-  fontSize: 12,
-  fontWeight: '500',
-},
-// Debug info styles
-debugInfo: {
-  marginTop: 16,
-  padding: 12,
-  backgroundColor: '#f5f5f5',
-  borderRadius: 8,
-  borderWidth: 1,
-  borderColor: '#e0e0e0',
-},
-debugText: {
-  fontSize: 12,
-  color: '#666',
-  marginBottom: 4,
-},
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  iosDatePickerContainer: {
+    backgroundColor: '#FDF7F1',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingBottom: 20,
+  },
+  iosDatePickerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  iosDatePickerButton: {
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+  },
+  iosDatePickerButtonText: {
+    fontSize: 16,
+    color: '#007AFF',
+  },
+  iosDatePickerDoneText: {
+    fontWeight: '600',
+  },
+  iosDatePickerTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#000',
+  },
+  iosDatePicker: {
+    backgroundColor: '#FDF7F1',
+    height: 200,
+  },
+  // Image display styles
+  imageSection: {
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  imageLabel: {
+    fontSize: 14,
+    color: '#333',
+    marginBottom: 8,
+    fontWeight: '500',
+  },
+  imageRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    marginTop: 8,
+  },
+  imageContainer: {
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  thumbnail: {
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  imageIndex: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 4,
+    textAlign: 'center',
+  },
+  // Image modal styles
+  imageModalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+  },
+  imageModalContainer: {
+    backgroundColor: '#FDF7F1',
+    borderRadius: 12,
+    padding: 20,
+    margin: 20,
+    maxWidth: '90%',
+    maxHeight: '80%',
+  },
+  fullImage: {
+    width: 300,
+    height: 300,
+    borderRadius: 8,
+  },
+  closeImageModalButton: {
+    position: 'absolute',
+    top: -10,
+    right: -10,
+    backgroundColor: '#ff5722',
+  },
+  // Remove button styles
+  removeButton: {
+    backgroundColor: '#ff4444',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+    marginTop: 4,
+  },
+  removeButtonText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  // Debug info styles
+  debugInfo: {
+    marginTop: 16,
+    padding: 12,
+    backgroundColor: '#FDF7F1',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  debugText: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 4,
+  },
 });
